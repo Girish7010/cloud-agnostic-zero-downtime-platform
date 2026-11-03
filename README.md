@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Cloud-Agnostic Automated Deployment Platform
 
 Starter implementation for the DevOps assignment. This repository is a **scaffold**, not proof of a production deployment.
@@ -34,4 +34,4 @@ Database migrations run on startup and may be incompatible. A safe expand/contra
 =======
 # cloud-agnostic-zero-downtime-platform
 Cloud-agnostic automated deployment platform with Terraform, Kubernetes, GitOps and zero-downtime deployments.
->>>>>>> e2db288153ac786ce5a5e36e87ab3e304194e31d
+

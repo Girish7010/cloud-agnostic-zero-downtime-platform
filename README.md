@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Cloud-Agnostic Automated Deployment Platform
 
 Starter implementation for the DevOps assignment. This repository is a **scaffold**, not proof of a production deployment.
@@ -30,3 +31,7 @@ Do not run `terraform apply` until you have reviewed the plan and estimated cost
 The application is a black box. Do not invent or rewrite its behavior. The Helm chart uses image placeholders until the actual API and worker image references, ports, environment variables, and startup behavior are confirmed.
 
 Database migrations run on startup and may be incompatible. A safe expand/contract plan is documented in `docs/database-migrations.md`; do not assume an old application can run against a contracted schema.
+=======
+# cloud-agnostic-zero-downtime-platform
+Cloud-agnostic automated deployment platform with Terraform, Kubernetes, GitOps and zero-downtime deployments.
+>>>>>>> e2db288153ac786ce5a5e36e87ab3e304194e31d

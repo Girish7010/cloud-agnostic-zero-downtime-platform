@@ -1,0 +1,20 @@
+# Replace placeholders only after inspecting the supplied black-box application.
+api:
+  image:
+    repository: REPLACE_WITH_API_IMAGE
+    digest: sha256:REPLACE_WITH_IMMUTABLE_DIGEST
+  replicas: 3
+  port: 8080
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits: { cpu: "2", memory: 1Gi }
+worker:
+  image:
+    repository: REPLACE_WITH_WORKER_IMAGE
+    digest: sha256:REPLACE_WITH_IMMUTABLE_DIGEST
+  replicas: 2
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits: { cpu: "2", memory: 1Gi }
+# Inject database and Redis credentials through External Secrets / cloud secret manager.
+# Do not put plaintext credentials here.

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: blackbox-app
+description: Deployment wrapper for the supplied stateless API and worker
+type: application
+version: 0.1.0
+appVersion: "provided-by-assignment"

@@ -1,0 +1,7 @@
+api:
+  image: { repository: nginx, tag: "1.27-alpine" }
+  replicas: 1
+  port: 8080
+worker:
+  image: { repository: busybox, tag: "1.36" }
+  replicas: 1

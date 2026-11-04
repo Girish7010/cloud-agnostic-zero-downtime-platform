@@ -1,0 +1,40 @@
+# Scheduled Terraform drift detection. `plan -detailed-exitcode` returns 2 when
+# real infrastructure differs from code; the job then fails, which notifies
+# the owners. Uses the read-only OIDC "plan" role from infra/bootstrap/aws-state
+# — no stored AWS keys. Skipped until repository variables are configured,
+# because no cloud stack has been applied yet (status: NOT EXECUTED).
+name: terraform-drift-detection
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  drift:
+    if: vars.AWS_PLAN_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [infra/live/aws/shared-eu, infra/live/aws/dedicated-acme-eu]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_STATE_REGION }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+      - name: Plan with detailed exit code
+        working-directory: ${{ matrix.stack }}
+        run: |
+          terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="region=${{ vars.AWS_STATE_REGION }}"
+          set +e
+          terraform plan -input=false -lock=false -detailed-exitcode -no-color
+          code=$?
+          if [ "$code" -eq 2 ]; then echo "::error::Drift detected in ${{ matrix.stack }}"; fi
+          exit $code

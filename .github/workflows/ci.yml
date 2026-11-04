@@ -1,0 +1,217 @@
+# Canonical delivery pipeline: verify -> build ONCE -> scan -> SBOM -> sign ->
+# promote the SAME digest dev -> staging -> production.
+#
+# Supply-chain notes:
+#  * Every third-party action is pinned to a full commit SHA (tag in comment),
+#    resolved from the action's GitHub release on 2026-11-04.
+#  * No long-lived cloud or registry secrets: GHCR uses the short-lived
+#    GITHUB_TOKEN, Cosign uses keyless signing with the GitHub OIDC token.
+#  * Approval gates: the `staging` and `production` GitHub environments must
+#    have "required reviewers" configured (repository settings / Terraform
+#    github provider). Without that they run unattended.
+#  * Metric gates on real traffic run in-cluster at rollout time
+#    (scripts/gated-rollout.sh locally; Argo Rollouts AnalysisTemplate in
+#    gitops/), because a GitHub runner cannot see cluster metrics.
+name: delivery-pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: delivery-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: cloud-platform-reference
+
+jobs:
+  verify:
+    name: Unit tests, lint, IaC validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Unit tests (Redis mocked with fakeredis)
+        run: python -m pytest -v
+
+      - name: Shell script lint
+        run: shellcheck -S warning scripts/*.sh
+
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: Helm lint and render every environment/tenant values file
+        run: |
+          helm lint deploy/chart
+          for f in deploy/environments/*.yaml gitops/tenants/*/values.yaml; do
+            [ -f "$f" ] || continue
+            echo "--- rendering with $f"
+            helm template ci deploy/chart -f "$f" > /dev/null
+          done
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: Terraform fmt + validate (no backend, no cloud credentials)
+        run: |
+          terraform fmt -check -recursive infra
+          for dir in $(find infra -name '*.tf' -not -path '*/.terraform/*' -not -path 'infra/modules/*' -exec dirname {} \; | sort -u); do
+            echo "--- $dir"
+            terraform -chdir="$dir" init -backend=false -input=false -no-color > /dev/null
+            terraform -chdir="$dir" validate -no-color
+          done
+
+  build:
+    name: Build once, scan, SBOM, sign
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # push to GHCR with GITHUB_TOKEN
+      id-token: write      # keyless Cosign signing via GitHub OIDC
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Image reference (GHCR requires lowercase)
+        id: ref
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (and push on main) — the only build in the pipeline
+        id: push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          pull: true
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: |
+            ${{ steps.ref.outputs.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          provenance: mode=max
+          sbom: false
+
+      - name: Resolve scan target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ref=${{ steps.ref.outputs.image }}:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ steps.ref.outputs.image }}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Vulnerability scan (fail on fixable CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: ${{ steps.target.outputs.ref }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ steps.target.outputs.ref }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+          upload-artifact: true
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        if: github.event_name != 'pull_request'
+
+      - name: Sign digest and attach SBOM attestation (keyless)
+        if: github.event_name != 'pull_request'
+        env:
+          REF: ${{ steps.target.outputs.ref }}
+        run: |
+          cosign sign --yes "$REF"
+          cosign attest --yes --type cyclonedx --predicate sbom.cyclonedx.json "$REF"
+
+      - name: Record release identity
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "image=${{ steps.ref.outputs.image }}"
+            echo "digest=${{ steps.push.outputs.digest }}"
+            echo "commit=${{ github.sha }}"
+            echo "run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } | tee release.env
+          echo "### Built \`${{ steps.target.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request'
+        with:
+          name: release-identity
+          path: release.env
+
+  promote-dev:
+    name: Promote to dev
+    if: github.event_name != 'pull_request'
+    needs: build
+    uses: ./.github/workflows/promote.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      environment: dev
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+
+  promote-staging:
+    name: Promote to staging
+    needs: [build, promote-dev]
+    uses: ./.github/workflows/promote.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      environment: staging
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+
+  promote-production:
+    name: Promote to production
+    needs: [build, promote-staging]
+    uses: ./.github/workflows/promote.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      environment: production
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}

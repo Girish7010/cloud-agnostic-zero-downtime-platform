@@ -1,4 +1,6 @@
 # Cloud-Agnostic, Automated, Zero-Downtime Deployment Platform
+<img width="1216" height="826" alt="image" src="https://github.com/user-attachments/assets/2a90775b-2959-44d1-9533-8a8e79329289" />
+
 
 A deployment platform for a stateless API plus a Redis-queue worker, backed by PostgreSQL and Redis:
 - Terraform provider layer
@@ -114,7 +116,7 @@ helm lint deploy/chart
 ```
 
 ## Operating it
-| Task | Command |
+| Task | Command | 
 |---|---|
 | Gated rollout (auto-rollback on probe or metric failure) | `scripts/gated-rollout.sh -f deploy/environments/local.yaml --set api.image.digest=sha256:...` |
 | Deploy under load (evidence) | `scripts/test-deploy-under-load.sh <name> PROFILE=constant RATE=150 DURATION=240s -- <rollout args>` |

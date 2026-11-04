@@ -1,0 +1,366 @@
+# Final local validation — 2026-11-04 15:16:01 IST / 2026-11-04T09:46:01Z
+# Commit under test: 2eb6badf901271bacdd4faf48ceff8844e49a5a5 (working tree: 8 changed paths, docs/evidence only)
+# Host: Linux x86_64; scope: unit tests, lint, Helm render + server dry-run, Terraform fmt/validate/test (mocked provider), doc page counts.
+# No terraform plan/apply, no AWS API calls, no cloud resources.
+
+$ .venv/bin/python -m pytest -v
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- /home/neo/Desktop/Task/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/neo/Desktop/Task
+configfile: pytest.ini
+testpaths: tests/unit
+plugins: anyio-4.16.0
+collecting ... collected 14 items
+
+tests/unit/test_api.py::test_healthz PASSED                              [  7%]
+tests/unit/test_api.py::test_readyz_ready_when_redis_up PASSED           [ 14%]
+tests/unit/test_api.py::test_readyz_503_when_redis_down PASSED           [ 21%]
+tests/unit/test_api.py::test_submit_job_enqueues_to_stream PASSED        [ 28%]
+tests/unit/test_api.py::test_submit_job_validation[body0] PASSED         [ 35%]
+tests/unit/test_api.py::test_submit_job_validation[body1] PASSED         [ 42%]
+tests/unit/test_api.py::test_metrics_exposes_request_counter PASSED      [ 50%]
+tests/unit/test_api.py::test_fault_injection_spares_probes PASSED        [ 57%]
+tests/unit/test_worker.py::test_processes_and_acks PASSED                [ 64%]
+tests/unit/test_worker.py::test_failed_job_stays_pending PASSED          [ 71%]
+tests/unit/test_worker.py::test_redelivered_completed_job_is_not_rerun PASSED [ 78%]
+tests/unit/test_worker.py::test_no_new_job_started_after_sigterm PASSED  [ 85%]
+tests/unit/test_worker.py::test_sigterm_during_job_still_acks PASSED     [ 92%]
+tests/unit/test_worker.py::test_stale_pending_message_is_reclaimed PASSED [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/neo/Desktop/Task/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 14 passed, 1 warning in 1.00s =========================
+[exit code: 0]
+
+$ .venv/bin/python -m compileall -q app
+[exit code: 0]
+
+$ shellcheck -S warning scripts/*.sh   (koalaman/shellcheck:stable container)
+[exit code: 0]
+
+$ actionlint   (rhysd/actionlint:latest container)
+[exit code: 0]
+
+$ helm version
+v4.3.0+gbec5b06
+[exit code: 0]
+
+$ helm lint deploy/chart
+==> Linting deploy/chart
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+[exit code: 0]
+
+$ helm template ci deploy/chart -f deploy/environments/dev.yaml
+  rendered OK (10 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f deploy/environments/local.yaml
+  rendered OK (14 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f deploy/environments/production.yaml
+  rendered OK (10 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f deploy/environments/staging.yaml
+  rendered OK (10 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f gitops/tenants/acme-eu/values.yaml
+  rendered OK (13 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f gitops/tenants/globex-eu/values.yaml
+  rendered OK (13 objects)
+[exit code: 0]
+
+$ helm template ci deploy/chart -f gitops/tenants/shared/values.yaml
+  rendered OK (13 objects)
+[exit code: 0]
+
+$ helm template devops-platform deploy/chart -f local.yaml -f shared/values.yaml | kubectl apply --dry-run=server -n devops-platform
+Warning: resource networkpolicies/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+networkpolicy.networking.k8s.io/devops-platform-api configured (server dry run)
+Warning: resource networkpolicies/devops-platform-worker is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+networkpolicy.networking.k8s.io/devops-platform-worker configured (server dry run)
+Warning: resource networkpolicies/devops-platform-redis is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+networkpolicy.networking.k8s.io/devops-platform-redis configured (server dry run)
+Warning: resource poddisruptionbudgets/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+poddisruptionbudget.policy/devops-platform-api configured (server dry run)
+Warning: resource poddisruptionbudgets/devops-platform-worker is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+poddisruptionbudget.policy/devops-platform-worker configured (server dry run)
+Warning: resource serviceaccounts/devops-platform-app is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+serviceaccount/devops-platform-app configured (server dry run)
+Warning: resource persistentvolumeclaims/devops-platform-redis-data is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+persistentvolumeclaim/devops-platform-redis-data configured (server dry run)
+Warning: resource services/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+service/devops-platform-api configured (server dry run)
+Warning: resource services/devops-platform-redis is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+service/devops-platform-redis configured (server dry run)
+Warning: resource deployments/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-api configured (server dry run)
+Warning: resource deployments/devops-platform-redis is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-redis configured (server dry run)
+Warning: resource deployments/devops-platform-worker is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-worker configured (server dry run)
+Warning: resource horizontalpodautoscalers/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+horizontalpodautoscaler.autoscaling/devops-platform-api configured (server dry run)
+Warning: resource scaledobjects/devops-platform-worker is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+Warning: PollingInterval is configured but is not relevant for scaling. It only affects scaling when minReplicaCount = 0, idleReplicaCount is set, or useCachedMetrics is enabled, but it still controls how often KEDA refreshes the ScaledObject status conditions and events
+Warning: CooldownPeriod is configured but is not relevant. CooldownPeriod is only relevant when minReplicaCount = 0 or idleReplicaCount is set
+scaledobject.keda.sh/devops-platform-worker configured (server dry run)
+[exit code: 0]
+
+$ terraform version
+Terraform v1.16.6
+on linux_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.17.1. You can update by downloading from https://developer.hashicorp.com/terraform/install
+[exit code: 0]
+
+$ terraform fmt -check -recursive -diff infra
+[exit code: 0]
+
+$ terraform -chdir=infra/bootstrap/aws-state init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/bootstrap/aws-state validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/dedicated-acme-eu init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/dedicated-acme-eu validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/shared-eu init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/shared-eu validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/modules/aws-stack init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/modules/aws-stack validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/platform init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of hashicorp/kubernetes from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/helm from the dependency lock file
+- Using previously-installed hashicorp/kubernetes v3.4.0
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/helm v3.3.0
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/platform validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/aws init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/aws validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/local init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of tehcyx/kind from the dependency lock file
+- Using previously-installed tehcyx/kind v0.13.0
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/local validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+$ terraform -chdir=infra/modules/aws-stack test -no-color   (mocked AWS provider)
+tests/residency.tftest.hcl... in progress
+  run "eu_tenant_in_us_region_is_rejected"... pass
+  run "provider_region_must_match_declared_region"... pass
+  run "invalid_deployment_mode_is_rejected"... pass
+  run "eu_tenant_in_eu_region_plans"... pass
+tests/residency.tftest.hcl... tearing down
+tests/residency.tftest.hcl... pass
+
+Success! 4 passed, 0 failed.
+[exit code: 0]
+
+$ pdfinfo docs/pdf/architecture.pdf | grep Pages
+Pages:           5
+[exit code: 0]
+
+$ pdfinfo docs/pdf/change-request-us.pdf | grep Pages
+Pages:           1
+[exit code: 0]
+
+$ check architecture.pdf <= 5 pages and change-request-us.pdf == 1 page
+OK
+[exit code: 0]
+
+$ sha256sum -c evidence/raw/SHA256SUMS.txt   (raw logs unchanged)
+evidence/load-25rps.log: OK
+evidence/load-50rps.log: OK
+evidence/rollout-availability-20261103-185254.log: OK
+evidence/rollback/zero-downtime-traffic.log: OK
+evidence/raw/load-25rps.txt: OK
+evidence/raw/load-50rps.txt: OK
+evidence/raw/rollout-availability-20261103-185254.txt: OK
+evidence/raw/zero-downtime-traffic.txt: OK
+[exit code: 0]
+
+# SUMMARY: 0 step(s) failed

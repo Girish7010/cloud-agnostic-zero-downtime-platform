@@ -60,9 +60,9 @@ Labels:
 | Secrets manager | Implemented (RDS-managed secret, ESO), not executed | `infra/modules/aws-stack` |
 | Non-portable components listed | Design | `docs/architecture.md` §1, `infra/README.md` |
 | Unit tests | Tested-local (14/14) | `test-results.txt` |
-| Build once, scan, SBOM, sign, promote same digest | Implemented; **runs on push to main** (check the Actions run) | `.github/workflows/ci.yml`, `promote.yml` |
+| Build once, scan, SBOM, sign, promote same digest | **Tested in CI**: [run 41804504092](https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41804504092) green; it promoted one digest to `dev`, `staging` and `production` ([ci-run.txt](evidence/submission-2026-11-04/ci-run.txt)) | `.github/workflows/ci.yml`, `promote.yml` |
 | Deploy by immutable digest | Tested-local (local OCI registry) | `deploy/environments/local.yaml` |
-| Approval gates | Implemented (GitHub environments; reviewers must be set in repo settings) | `ci.yml` |
+| Approval gates | **Tested in CI**: `staging` and `production` require a reviewer; both were approved manually in run 41804504092 | `ci.yml` |
 | Metric-based deployment gates + automatic rollback | Tested-local (`gated-rollout.sh`); cloud canary = Design | `rollback-bad-release-*`, `gitops/rollouts/` |
 | Deploy under load with no errors | Tested-local: **36,001 req @150 rps, 0 failed** | `deploy-under-load/` |
 | API probes, graceful shutdown, PDB | Tested-local | chart, `deploy-under-load/` |

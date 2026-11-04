@@ -96,6 +96,6 @@ Real app integration (migrations, idempotency, TLS), then AWS staging apply with
 ## Things to admit up front
 - Reference app, not the black box.
 - No cloud resources, so 2,250 rps, the cloud canary and cloud drift detection are not executed.
-- The GitHub Actions pipeline's first real run happens on this push; check its result before the review.
+- The GitHub Actions pipeline failed twice on 4 Nov because the Trivy installer exited with code 6 before scanning (runs 41787637662 and 41798284612). After switching to the digest-pinned Trivy container, run 41804504092 passed all 5 jobs. Details are in `evidence/submission-2026-11-04/ci-run.txt`.
 - Argo CD, Argo Rollouts and kube-prometheus-stack are configured, not running.
 - The local Redis and Postgres are single-instance.

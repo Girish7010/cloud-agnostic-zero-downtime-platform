@@ -66,12 +66,12 @@ There are no console steps. Drift detection is a nightly `terraform plan -detail
 
 ## 2. Delivery and deployment
 
-**Pipeline [IMPLEMENTED; runs on push to `main`]:**
+**Pipeline [TESTED in CI: run 41804504092, commit `2eb6bad`, all 5 jobs green]:**
 1. **verify:** pytest (14 tests), shellcheck, Helm render of every tenant, and `terraform validate` for every root.
 2. **build:** exactly one `docker build` → push to GHCR → Trivy (fails on fixable HIGH/CRITICAL) → CycloneDX SBOM → `cosign sign` + `cosign attest` (keyless, GitHub OIDC).
 3. **promote ×3** (`promote.yml`): `cosign verify` and `verify-attestation` against this repository's workflow identity, then move `:dev`, `:staging` and `:production` to **the same digest** with `imagetools create`. The job asserts that the promoted digest equals the built one.
 
-Staging and production are GitHub Environments with required reviewers, which is the approval gate. Actions are pinned to full commit SHAs. **Metric gates on real traffic** run in-cluster at rollout time, because a runner can't see production metrics.
+Staging and production are GitHub Environments with required reviewers, which is the approval gate (both were approved manually in that run). Actions are pinned to full commit SHAs. **Metric gates on real traffic** run in-cluster at rollout time, because a runner can't see production metrics.
 
 **API strategy — canary with automated analysis [DESIGN on EKS; TESTED-LOCAL as rolling + analysis].**
 - **Canary steps:** 10% → 25% → 50% → 100%, each held for 5 minutes. Every step must pass three checks:
@@ -161,7 +161,7 @@ Backups, snapshots, logs and metrics stay in-region: there is no cross-region co
 | # | Decision | Reason and benefit | Rejected alternative | Trade-off accepted |
 |---|---|---|---|---|
 | 1 | Kubernetes as the portability layer; one Terraform module per provider behind a shared output contract | Provider APIs differ in failure semantics, so explicit modules keep the non-portable parts visible and reviewable. The same chart runs on kind and EKS. | One module with `if provider` branches, or Crossplane only; a PaaS | One provider module to write per cloud (`gcp-stack` for CR-001); cost of running Kubernetes |
-| 2 | Build once, promote the **digest**; keyless Cosign plus SBOM attestation, verified at every promotion | The bytes tested in staging are the bytes that run in production. There's no signing key to leak, and tampering fails the promotion. | Rebuild per environment; mutable tags; long-lived signing keys | Depends on Sigstore availability. A scan finding blocks the release: it did on 4 Nov (run 41787637662, see `limitations.md`). |
+| 2 | Build once, promote the **digest**; keyless Cosign plus SBOM attestation, verified at every promotion | The bytes tested in staging are the bytes that run in production. There's no signing key to leak, and tampering fails the promotion. | Rebuild per environment; mutable tags; long-lived signing keys | Depends on Sigstore availability. Any scan failure blocks the release: on 4 Nov the scanner's installer failed (runs 41787637662, 41798284612), so nothing was signed or promoted (see `limitations.md`). Fixed in run 41804504092. |
 | 3 | **GitOps pull** (Argo CD ApplicationSet) | CI holds no cluster credentials; drift self-heals; Git is the audit trail | Pipeline push with cluster credentials in CI | Argo CD to run per cluster. Not exercised locally, where pipeline push was used. |
 | 4 | **API canary** with Prometheus analysis | Measured locally: a bad *rolling* release exposed **13%** of requests for about 87 s before the gate rolled it back. A 10% canary caps exposure at roughly a tenth of that. | Blue/green, which needs 2× capacity at 2,250 rps and doesn't solve schema coexistence; plain rolling | Needs Argo Rollouts and Prometheus [DESIGN]. A release takes about 20 min (4 steps × 5 min). |
 | 5 | **Workers:** rolling, SIGTERM drain, **KEDA on stream lag** | Jobs are I/O-bound and pull-based, so backlog is the real demand signal | CPU-based HPA; canary for workers | At-least-once delivery means duplicates are possible, so the black box must be idempotent |
@@ -186,7 +186,8 @@ Backups, snapshots, logs and metrics stay in-region: there is no cross-region co
 | Pod crash | Restart; readiness removes it from endpoints | — |
 | AZ loss | Multi-AZ RDS/Valkey; zone spread; PDB | — |
 | Bad release | Gates + automatic rollback | tested twice |
-| Vulnerable dependency in the image | Trivy gate fails the build, so nothing is signed or promoted | happened in CI on 4 Nov (run 41787637662) |
+| Vulnerable dependency in the image | Trivy gate fails the build (exit 1), so nothing is signed or promoted | tested locally: the pre-fix image fails with 5 HIGH |
+| Scanner can't run (install, DB or registry error) | Scan step fails with exit 2 and a distinct error, never "clean" | happened in CI on 4 Nov (installer exit 6, runs 41787637662, 41798284612); fixed by the digest-pinned Trivy container |
 | Fleet ring failure | Halt | tested |
 | Worker eviction | Drain | tested |
 | Redis restart | AOF persistence locally; Multi-AZ in cloud | — |

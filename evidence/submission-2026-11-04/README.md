@@ -23,6 +23,35 @@
 | 12 | Helm validation | [helm-validation.txt](helm-validation.txt) | helm lint/template per env + server dry-run | pass |
 | 13 | Terraform validation | [terraform-validation.txt](terraform-validation.txt) | fmt/init -backend=false/validate per root, `terraform test` | 7/7 roots valid; 4/4 residency tests (mocked AWS provider) |
 | 14 | Environment audit | [environment-audit.txt](environment-audit.txt) | tool versions, cluster, AWS read-only resource counts | no AWS compute/DB resources exist |
-| 15 | CI pipeline run | GitHub Actions (on push) | `.github/workflows/ci.yml` | **see the Actions tab; recorded in [ci-run.txt](ci-run.txt) after push** |
+| 15 | **CI pipeline run** | [ci-run.txt](ci-run.txt) · [run 41804504092](https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41804504092) | `.github/workflows/ci.yml` on push of `2eb6bad` | **all 5 jobs green**: verify → one build → Trivy 0 fixable CRITICAL/HIGH → CycloneDX SBOM → keyless sign + attest → dev, staging and production (the last two manually approved) all on `sha256:a14dde1a…8498d`. Signature, attestation and tag digests rechecked from this laptop with cosign v3.1.3. Runs 41787637662 and 41798284612 **failed** (scanner installer exit 6) and are recorded in [limitations.md](limitations.md). |
+| 16 | Final local validation | [final-validation.txt](final-validation.txt) | pytest, compileall, shellcheck, actionlint, Helm lint/render/server dry-run, Terraform fmt/init/validate (7 roots) + `terraform test`, PDF page counts, raw-log SHA-256 | **35/35 steps exit 0**; 14/14 tests; 4/4 Terraform tests; architecture 5 pages, CR 1 page; raw logs unchanged |
+
+## Requirement-to-evidence matrix (assignment PDF deliverables)
+
+Statuses: **Completed** · **Partially completed** · **Documented but not executed** · **Blocked** · **Not applicable**. *Completed* means checked against the raw output or rendered file listed, not just that a document exists. Every runtime result is from a **local single-node kind cluster** running the **reference harness**, not the black-box app.
+
+| Assignment requirement | Implementation | Evidence | Status |
+|---|---|---|---|
+| Git repository | `github.com/Girish7010/cloud-agnostic-zero-downtime-platform`, `main` | Commit history; [final-validation.txt](final-validation.txt) | Completed |
+| README, IaC, pipelines, scripts | `README.md`, `infra/` (7 Terraform roots), `.github/workflows/`, `scripts/`, `deploy/chart` | [final-validation.txt](final-validation.txt): lint, validate, `terraform test` · CI: [ci-run.txt](ci-run.txt) | Completed: static checks pass locally, and CI run 41804504092 is green end to end (it promotes GHCR tags; no cluster deploy). AWS apply: **Blocked** (no spend approved) |
+| Architecture document ≤ 5 pages | `docs/architecture.md` → `docs/pdf/architecture.pdf` | 5 pages (rendered by `scripts/render-docs.sh`, counted with `pdfinfo`) | Completed |
+| Architecture diagram | Two Mermaid diagrams (delivery; runtime targets), labelled tested / implemented / design | `architecture.pdf` page 1 | Completed |
+| ≥ 5 decisions with rejected alternatives | 8 decisions, each with reason, rejected alternative and trade-off | `architecture.md` §5 | Completed |
+| Top five risks | R1–R5 with impact, likelihood, mitigation and recovery, plus a failure-mode table | `architecture.md` §6 | Completed |
+| Deploy under load with no errors | `scripts/test-deploy-under-load.sh`: in-cluster k6 at 150 rps during a v4→v5 **digest** rollout (11:19:46–11:22:24 IST) | [deploy-under-load/](deploy-under-load/): 36,001 requests, **0 failed**, p95 2.91 ms, ready endpoints never < 5, 4/4 gates PASS | Completed (**local single-node kind**, not multi-node cloud) |
+| Automatic rollback of a bad release | `scripts/gated-rollout.sh`: gate 1 readiness, gate 2 metric analysis; deliberately bad releases | [rollback-bad-release-metrics/](rollback-bad-release-metrics/) (error rate 0.3224 → `helm rollback` 26→25), [rollback-bad-release-readiness/](rollback-bad-release-readiness/) (rev 28 failed → 29 = 27, 0 of 15,000 failed) | Completed (local) |
+| 15x load test | `scripts/test-15x-ratio.sh`: 10 → 150 → 10 rps (a 15x **ratio**), HPA and KEDA | [load-15x-ratio/](load-15x-ratio/): 35,099 requests, 0 failed, p95 4.03 ms, 1,170/1,170 jobs; API 2→5, workers 1→6 | **Partially completed**: a 15x ratio passed. The PDF's 2,250 rps peak is **Blocked**: it needs cloud capacity and spend approval (`docs/cost-estimate.md`). |
+| Restore test | `scripts/backup-restore-postgres.sh`: `pg_dump`, then restore into a **new** DB | [backup-restore/run.txt](backup-restore/run.txt): schema, rows and content MD5 identical. The dump's SHA-256 was rechecked on 2026-11-04 and matches. | Completed (procedure on a 2-row demo DB; not RTO at scale) |
+| Second dedicated cloud stack | GCP `gcp-stack` design behind the same output contract | `docs/change-request-us.md` | Documented but not executed |
+| US-West primary / US-East failover | us-west1 primary, us-east4 warm standby, RPO/RTO, failover and failback | `docs/change-request-us.md` | Documented but not executed |
+| One-page change request | `docs/change-request-us.md` → `docs/pdf/change-request-us.pdf` | 1 page (`pdfinfo`) | Completed |
+| 24-hour release condition | Release gate: CAB approval, go-live no earlier than 24 h after approval, game day passed | `change-request-us.md` "Release gate" | Completed as a written gate. The release itself is **Not applicable** today: the CR is future work and nothing was released. |
+
+**Note on row 3 (API replica count at the end of the 15x run).** `load-15x-ratio/run.txt` prints `final: api=2`, but the `kubectl get hpa` output directly below shows `REPLICAS 3`, and the last `scaling-timeline.txt` sample (12:06:34) also shows 3. These read different fields:
+- `final: api=` is the Deployment's `.status.replicas`, which drops as soon as the HPA scales down;
+- the timeline uses `.status.readyReplicas`, which still counts the pod that is terminating;
+- the HPA `REPLICAS` column is the HPA's own `currentReplicas`, which is refreshed on its sync loop (15 s by default).
+
+So at 12:06:39 the scale-in to 2 had been decided, but the third pod hadn't finished terminating. This is the most likely reading; it wasn't captured directly. A read-only check during the audit on 2026-11-04 showed the HPA at 2 replicas. The raw log is unchanged.
 
 Earlier evidence from 3 November is in `../` (rollout 60/60, the Helm worker rollback 16→17, the migration demo). The ignored `.log` originals are preserved byte-identical as `../raw/*.txt`, with SHA-256 sums in `../raw/SHA256SUMS.txt`.

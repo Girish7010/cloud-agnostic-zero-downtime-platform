@@ -1,0 +1,70 @@
+# Docker smoke test of the CI-built image (run #5 digest), 2026-11-04T10:46:23Z
+$ docker pull -q ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+[exit code: 0]
+
+$ docker network create zd-smoke
+06b9120607c34aa3b0d7337ca6ac0725503fb5d190e4950cba9726c8be9fe8b8
+[exit code: 0]
+
+$ docker run -d --name zd-smoke-redis --network zd-smoke redis:7-alpine
+a4c0170e0558bc7e158c41fe2221db30b429068a59197eb29d2dcb12452fba51
+[exit code: 0]
+
+$ docker run -d --name zd-smoke-api --network zd-smoke -p 18080:8080 -e REDIS_URL=redis://zd-smoke-redis:6379/0 ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+b1e19720795755cf4641a0c96c91ffe2b648f0e4f02298bf05267162e4c0dff7
+[exit code: 0]
+
+$ docker run -d --name zd-smoke-worker --network zd-smoke -e REDIS_URL=redis://zd-smoke-redis:6379/0 ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3 python -m app.worker.main
+0b2e560e3951d83058a4d6d25463d4fe775d7995a6f4c241f90a0a6b3687a635
+[exit code: 0]
+
+$ curl -s -w  HTTP %{http_code}\n localhost:18080/healthz
+{"status":"healthy"} HTTP 200
+[exit code: 0]
+
+$ curl -s -w  HTTP %{http_code}\n localhost:18080/readyz
+{"status":"ready","redis":"connected"} HTTP 200
+[exit code: 0]
+
+$ curl -s -w  HTTP %{http_code}\n -X POST localhost:18080/jobs -H content-type: application/json -d {"job_id":"smoke-1","duration_seconds":1}
+{"status":"accepted","job_id":"smoke-1","message_id":"1793789202185-0"} HTTP 202
+[exit code: 0]
+
+$ docker exec zd-smoke-redis redis-cli EXISTS job:done:smoke-1
+1
+[exit code: 0]
+
+$ curl -s localhost:18080/metrics | grep -c "^http_requests_total"
+3
+
+$ docker logs --tail 5 zd-smoke-worker
+2026-11-04 10:46:37,454 INFO Worker worker-0b2e560e3951 started; metrics on :9090
+2026-11-04 10:46:37,457 INFO Created Redis consumer group
+2026-11-04 10:46:42,186 INFO Processing job_id=smoke-1 message_id=1793789202185-0 duration=1s payload={}
+2026-11-04 10:46:43,187 INFO Completed job_id=smoke-1 message_id=1793789202185-0
+2026-11-04 10:46:43,211 INFO Acknowledged job_id=smoke-1 message_id=1793789202185-0
+[exit code: 0]
+
+$ docker stop -t 15 zd-smoke-api zd-smoke-worker
+zd-smoke-api
+zd-smoke-worker
+[exit code: 0]
+
+$ docker logs --tail 4 zd-smoke-api
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1]
+[exit code: 0]
+
+$ docker rm -f zd-smoke-api zd-smoke-worker zd-smoke-redis
+zd-smoke-api
+zd-smoke-worker
+zd-smoke-redis
+[exit code: 0]
+
+$ docker network rm zd-smoke
+zd-smoke
+[exit code: 0]
+

@@ -6,28 +6,45 @@
 
 ## 1. Architecture
 
+**(a) Delivery: GitHub Actions, OIDC, no stored keys.**
+
+```mermaid
+flowchart LR
+  GH[Developer PR → GitHub] --> V[verify: tests, lint, helm, terraform] --> B[build ONCE] --> T[Trivy gate] --> S[SBOM] --> K[cosign sign + attest] --> REG[(GHCR digest)]
+  REG --> D[verify signature → dev] --> ST[staging ✋] --> PRD[production ✋]
+```
+
+**(b) Runtime targets: the same signed digest and the same chart everywhere.**
+
 ```mermaid
 flowchart TB
-  subgraph CI["GitHub Actions — OIDC, no stored keys"]
-    direction LR
-    V[verify] --> B[build ONCE] --> SC[scan + SBOM] --> SG[sign + attest] --> PR[promote dev → staging ✋ → prod ✋]
+  SRC[signed digest from GHCR + values from gitops/]
+  subgraph LOCAL["Target 1: local kind [TESTED-LOCAL]"]
+    GR[gated / fleet rollout: rings, halt on failure] --> AL[API: rolling, probes, PDB, HPA]
+    GR --> WL[worker: drain, KEDA on queue lag]
+    AL --> GL{metric gate on app metrics}
+    GL -->|breach| RL[automatic helm rollback]
   end
-  SG --> REG[(GHCR immutable digest)]
-  PR --> GIT[(gitops/: tenants, rings)]
-  subgraph EU["EU region — provider layer (Terraform aws-stack)"]
-    direction LR
-    subgraph K8S["EKS — platform layer: Argo CD · Rollouts · KEDA · ESO · Prometheus"]
-      direction TB
-      ARGO[Argo CD] --> RO[API canary + analysis]
-      ARGO --> WK[Worker + KEDA]
-    end
-    RO --> PG[(RDS PostgreSQL Multi-AZ)]
-    WK --> RD[(Valkey Multi-AZ)]
-    SM[(Secrets Manager)] -.ESO.-> K8S
+  subgraph EU["Target 2: AWS eu-* [IMPLEMENTED, not applied]"]
+    ARGO[Argo CD pull] --> RO[ALB → Rollouts canary 10/25/50/100%]
+    RO --> DATA[(RDS + Valkey Multi-AZ, Secrets Manager via ESO)]
+    PROM[Prometheus + Alertmanager] --> AN{AnalysisRun}
+    AN -->|fail| AB[abort to stable]
   end
-  GIT -->|pull| ARGO
-  REG -->|digest| K8S
+  subgraph US["CR-001: GCP US [DESIGN only]"]
+    DNS[global LB + DNS health checks] --> UW[us-west1 primary]
+    DNS -.failover.-> UE[us-east4 warm standby]
+    UW -.async DB replica.-> UE
+  end
+  SRC --> GR
+  SRC --> ARGO
+  SRC -.ring 3.-> DNS
+  style LOCAL fill:#e3f4e3,stroke:#2e7d32
+  style EU fill:#e3ecf8,stroke:#1f5fa8,stroke-dasharray:5 3
+  style US fill:#f0f0f0,stroke:#777,stroke-dasharray:2 2
 ```
+
+*Legend:* green, solid = ran on kind with evidence; blue, dashed = IaC and config that validate but were never applied; grey, dotted = design in the change request. The delivery pipeline runs on GitHub-hosted runners; its status is in `evidence/submission-2026-11-04/ci-run.txt`.
 
 **Three layers, one contract.**
 
@@ -141,26 +158,26 @@ Backups, snapshots, logs and metrics stay in-region: there is no cross-region co
 
 ## 5. Key decisions and rejected alternatives
 
-| # | Decision | Rejected alternative | Why |
-|---|---|---|---|
-| 1 | Kubernetes as the portability layer; one Terraform module per provider behind a shared output contract | A multi-cloud abstraction (one module with `if provider` branches, or Crossplane-only) | Provider APIs differ in failure semantics; explicit modules keep non-portable parts visible and reviewable |
-| 2 | Build once, promote the **digest**, keyless Cosign + SBOM attestation, verified at each promotion | Rebuild per environment / mutable tags / long-lived signing keys | Same bytes tested in staging run in production; no key to leak |
-| 3 | **GitOps pull** (Argo CD ApplicationSet) | Pipeline push with cluster credentials in CI | No inbound cluster credentials in CI; drift is self-healed; audit trail in Git |
-| 4 | **API canary** with Prometheus analysis | Blue/green (needs 2× capacity at 2,250 rps and doesn't solve schema coexistence) or plain rolling | Measured locally: a bad *rolling* release exposed **13%** of requests for ~87 s before the gate rolled back; a 10% canary would cap exposure to about a tenth of that |
-| 5 | **Workers:** rolling + SIGTERM drain + **KEDA on stream lag** | CPU-based HPA / canary for workers | Jobs are I/O-bound and pull-based; backlog is the real demand signal |
-| 6 | **Dedicated tenants = separate provider stacks** from the same module; shared tenants = namespaces | Namespace-only isolation for dedicated tenants / an AWS account per tenant for everyone | 99.95% SLO and residency need independent failure domains; full accounts for all is too costly |
-| 7 | Managed PostgreSQL / Valkey (Multi-AZ, PITR) | In-cluster StatefulSets | Backups, failover and patching are the provider's job; the in-cluster Redis exists for local only |
-| 8 | Expand/contract migrations + PITR | Down-migrations or "redeploy the old image" | A destructive DDL can't be undone by code; data recovery has to be planned |
+| # | Decision | Reason and benefit | Rejected alternative | Trade-off accepted |
+|---|---|---|---|---|
+| 1 | Kubernetes as the portability layer; one Terraform module per provider behind a shared output contract | Provider APIs differ in failure semantics, so explicit modules keep the non-portable parts visible and reviewable. The same chart runs on kind and EKS. | One module with `if provider` branches, or Crossplane only; a PaaS | One provider module to write per cloud (`gcp-stack` for CR-001); cost of running Kubernetes |
+| 2 | Build once, promote the **digest**; keyless Cosign plus SBOM attestation, verified at every promotion | The bytes tested in staging are the bytes that run in production. There's no signing key to leak, and tampering fails the promotion. | Rebuild per environment; mutable tags; long-lived signing keys | Depends on Sigstore availability. A scan finding blocks the release: it did on 4 Nov (run 41787637662, see `limitations.md`). |
+| 3 | **GitOps pull** (Argo CD ApplicationSet) | CI holds no cluster credentials; drift self-heals; Git is the audit trail | Pipeline push with cluster credentials in CI | Argo CD to run per cluster. Not exercised locally, where pipeline push was used. |
+| 4 | **API canary** with Prometheus analysis | Measured locally: a bad *rolling* release exposed **13%** of requests for about 87 s before the gate rolled it back. A 10% canary caps exposure at roughly a tenth of that. | Blue/green, which needs 2× capacity at 2,250 rps and doesn't solve schema coexistence; plain rolling | Needs Argo Rollouts and Prometheus [DESIGN]. A release takes about 20 min (4 steps × 5 min). |
+| 5 | **Workers:** rolling, SIGTERM drain, **KEDA on stream lag** | Jobs are I/O-bound and pull-based, so backlog is the real demand signal | CPU-based HPA; canary for workers | At-least-once delivery means duplicates are possible, so the black box must be idempotent |
+| 6 | **Dedicated tenants are separate provider stacks** from the same module; shared tenants are namespaces | The 99.95% SLO and residency need independent failure domains | Namespace-only isolation for dedicated tenants; an AWS account per tenant for everyone | About $1.5–2.2k per month per dedicated tenant; a 20–25 min onboarding estimate; more stacks to upgrade |
+| 7 | Managed PostgreSQL and Valkey (Multi-AZ, PITR) | Backups, failover and patching become the provider's job | In-cluster StatefulSets, which are used for local only | Provider-specific and non-portable; local tests don't exercise managed failover |
+| 8 | Expand/contract migrations plus PITR | A destructive DDL can't be undone by code, so data recovery has to be planned | Down-migrations; "redeploy the old image" | Breaking changes take at least 2 releases; a PITR restore takes hours, with a cut-over |
 
 ## 6. Top five risks and mitigations
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| **R1** Black-box startup migrations are not N-1-compatible | Old and new pods conflict mid-rollout; rollback doesn't restore data | Expand/contract policy; pre-sync migration Job with advisory lock; snapshot gate before contract; PITR runbook |
-| **R2** Scale-up too slow (nodes, image pull) to reach 15x within 5 minutes | Raised p95, errors | API peak fits on minimum nodes; overprovisioning pod; aggressive HPA policy; images pinned and pre-pulled; **must be load-tested at 2,250 rps in cloud** (not yet done) |
-| **R3** PostgreSQL connection exhaustion at peak (~354 connections) | 5xx across all tenants | Pool limits per pod, `max_connections=400`, RDS Proxy/PgBouncer, alert at 80% of connections |
-| **R4** Job loss or duplicates (at-least-once delivery, queue failover) | Lost or double-processed business jobs | XACK only after completion; idempotency marker; 75 s grace; Multi-AZ Valkey with `noeviction`; **the black box must be idempotent** (unverified) |
-| **R5** EU residency leakage via backups, logs, telemetry or support tooling | Contract/legal breach | Region validation in three layers, no cross-region replication for EU, in-region log storage, tenant-labelled data paths, periodic placement audit |
+| Risk | Impact | Likelihood | Mitigation | Recovery / contingency |
+|---|---|---|---|---|
+| **R1** Black-box startup migrations aren't N-1-compatible | Old and new pods conflict mid-rollout; rollback doesn't restore data | **High** (the brief says some aren't) | Expand/contract policy; pre-sync migration Job with an advisory lock; snapshot gate before contract | Forward-fix, or PITR into a **new** instance plus cut-over (`runbooks/database-recovery.md` §A) |
+| **R2** Scale-up too slow (nodes, image pull) to reach 15x within 5 minutes | Raised p95, errors | **Medium**: proven only as a local 15x *ratio* | API peak fits on the minimum nodes; overprovisioning pod; aggressive HPA policy; images pinned and pre-pulled; **must be load-tested at 2,250 rps in cloud** (not done) | Raise HPA minimum and node floor manually; shed load at the edge (`runbooks/api-outage.md`) |
+| **R3** PostgreSQL connection exhaustion at peak (about 354 connections) | 5xx across all tenants | **Medium** | Pool limits per pod, `max_connections=400`, RDS Proxy or PgBouncer, alert at 80% of connections | Cut pool sizes or the HPA maximum, enable RDS Proxy (`database-recovery.md` §B) |
+| **R4** Job loss or duplicates (at-least-once delivery, queue failover) | Lost or double-processed business jobs | **Medium** | XACK only after completion; idempotency marker; 75 s grace; Multi-AZ Valkey with `noeviction`; **the black box must be idempotent** (unverified) | `XAUTOCLAIM` reclaims unacked jobs after 120 s; re-enqueue from the source (`runbooks/queue-backlog.md`) |
+| **R5** EU residency leakage via backups, logs, telemetry or support tooling | Contract or legal breach | **Low** (three guards), but severe | Region validation in three layers; no cross-region replication for EU; in-region logs; periodic placement audit | Security incident process: contain, purge copies outside the EU, notify the tenant per contract |
 
 **Failure modes covered:**
 
@@ -169,6 +186,7 @@ Backups, snapshots, logs and metrics stay in-region: there is no cross-region co
 | Pod crash | Restart; readiness removes it from endpoints | — |
 | AZ loss | Multi-AZ RDS/Valkey; zone spread; PDB | — |
 | Bad release | Gates + automatic rollback | tested twice |
+| Vulnerable dependency in the image | Trivy gate fails the build, so nothing is signed or promoted | happened in CI on 4 Nov (run 41787637662) |
 | Fleet ring failure | Halt | tested |
 | Worker eviction | Drain | tested |
 | Redis restart | AOF persistence locally; Multi-AZ in cloud | — |

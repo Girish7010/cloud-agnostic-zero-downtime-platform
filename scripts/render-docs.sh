@@ -3,7 +3,7 @@
 # Usage: scripts/render-docs.sh   (needs .venv with markdown, google-chrome)
 set -euo pipefail
 OUT="${OUT:-docs/pdf}"; mkdir -p "$OUT"
-for spec in architecture:9.2 change-request-us:8.6; do
+for spec in architecture:9.2 change-request-us:8.2; do
   doc=${spec%%:*}; font=${spec##*:}
   .venv/bin/python scripts/render-docs.py "docs/$doc.md" "$OUT/$doc.html" "$font"
   google-chrome --headless=new --disable-gpu --no-sandbox --user-data-dir="$(mktemp -d)" --no-first-run --no-pdf-header-footer --virtual-time-budget=15000 \

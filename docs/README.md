@@ -12,4 +12,4 @@
 | [review-prep.md](review-prep.md) | 60-minute review Q&A |
 | [../infra/README.md](../infra/README.md) | IaC layers, bootstrap order, state/drift, portability matrix |
 
-`Pasted image.png` is an earlier architecture sketch, kept as-is.
+[`archive/`](archive/README.md) holds an **obsolete** architecture draft (`Pasted image.png`). It is not the current design; see [architecture.md](architecture.md).

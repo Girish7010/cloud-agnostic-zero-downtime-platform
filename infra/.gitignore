@@ -1,0 +1,4 @@
+# Filled-in partial backend configs (bucket names, account IDs). Commit only *.example.
+backend.hcl
+# kind writes a kubeconfig next to the local root.
+providers/local/kubeconfig

@@ -1,0 +1,11 @@
+# Example inputs for an ad-hoc nonprod stack. Copy to <name>.tfvars (no secrets
+# belong here; there are none to set) and run:
+#   terraform init -backend-config=backend.hcl
+#   terraform plan -var-file=<name>.tfvars
+environment                   = "dev"
+aws_region                    = "eu-central-1"
+stack_name                    = "dev-eu"
+tenant_id                     = "shared"
+deployment_mode               = "shared"
+data_residency                = "eu"
+cluster_endpoint_public_cidrs = ["203.0.113.0/24"] # replace with your egress IPs

@@ -1,0 +1,9 @@
+# cp backend.s3.tf.example backend.tf   (AWS targets only)
+# terraform init -backend-config=../live/aws/shared-eu/backend.hcl
+terraform {
+  backend "s3" {
+    key          = "platform/shared-eu/terraform.tfstate" # one key per cluster
+    use_lockfile = true
+    encrypt      = true
+  }
+}

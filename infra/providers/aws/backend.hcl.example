@@ -1,0 +1,9 @@
+# Copy to backend.hcl (not committed) and fill from the outputs of
+# infra/bootstrap/aws-state:
+#   terraform -chdir=infra/bootstrap/aws-state output -raw state_bucket_name
+#   terraform -chdir=infra/bootstrap/aws-state output -raw state_kms_key_arn
+# Then: terraform init -backend-config=backend.hcl
+bucket     = "<state-bucket-name>"
+region     = "eu-central-1" # state bucket lives in the EU
+kms_key_id = "<state-kms-key-arn>"
+key        = "aws/<stack_name>/terraform.tfstate" # one key per stack

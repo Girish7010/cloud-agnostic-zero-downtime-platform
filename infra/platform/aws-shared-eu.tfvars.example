@@ -1,0 +1,7 @@
+# Values come from `terraform -chdir=infra/live/aws/shared-eu output`.
+target          = "aws"
+kubeconfig_path = "~/.kube/config" # after running the kubeconfig_command output
+kube_context    = "shared-eu"
+cluster_name    = "shared-eu"
+region          = "eu-central-1"
+vpc_id          = "vpc-xxxxxxxx"

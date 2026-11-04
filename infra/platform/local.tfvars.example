@@ -1,0 +1,3 @@
+target          = "local"
+kubeconfig_path = "../providers/local/kubeconfig"
+kube_context    = "kind-devops-assignment"

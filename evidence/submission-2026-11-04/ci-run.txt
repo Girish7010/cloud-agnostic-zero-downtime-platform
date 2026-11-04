@@ -1,4 +1,179 @@
 # GitHub Actions evidence: delivery-pipeline (.github/workflows/ci.yml)
+# Final record: run #5 (41810479665). Recorded 2026-11-04T10:36:28Z from the public GitHub REST API and GHCR registry API
+# (unauthenticated, read-only) plus independent Cosign checks run from this laptop.
+# Everything below is copied from tool output. Nothing was typed by hand except these comments and section headings.
+# The earlier record of run #3 (41804504092) is kept unchanged at the end of this file.
+
+## A1. Final run
+html_url:      https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665
+id:            41810479665
+run_number:    5
+run_attempt:   1
+name:          delivery-pipeline
+display_title: Evidence: record green CI run 41804504092, final validation; correct …
+event:         push
+head_branch:   main
+head_sha:      9d747ffb66efe81a899fcc4e622557cc7c72aab9
+status:        completed
+conclusion:    success
+created_at:    2026-11-04T09:52:50Z
+updated_at:    2026-11-04T10:12:04Z
+
+## A2. Jobs and steps (GET /actions/runs/41810479665/jobs)
+JOB  Unit tests, lint, IaC validation         success  2026-11-04T09:54:03Z -> 2026-11-04T09:55:30Z
+     https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665/job/126508603076
+     step  1  success  Set up job
+     step  2  success  Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+     step  3  success  Run actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+     step  4  success  Install pinned dependencies
+     step  5  success  Unit tests (Redis mocked with fakeredis)
+     step  6  success  Shell script lint
+     step  7  success  Run azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
+     step  8  success  Helm lint and render every environment/tenant values file
+     step  9  success  Run hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+     step 10  success  Terraform fmt + validate (no backend, no cloud credentials)
+     step 19  success  Post Run actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+     step 20  success  Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+     step 21  success  Complete job
+JOB  Build once, scan, SBOM, sign             success  2026-11-04T09:55:37Z -> 2026-11-04T09:56:56Z
+     https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665/job/126509136662
+     step  1  success  Set up job
+     step  2  success  Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+     step  3  success  Image reference (GHCR requires lowercase)
+     step  4  success  Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+     step  5  success  Log in to GHCR
+     step  6  success  Build (and push on main) — the only build in the pipeline
+     step  7  success  Resolve scan target
+     step  8  success  Vulnerability scan (fail on fixable CRITICAL/HIGH)
+     step  9  success  Upload Trivy report
+     step 10  success  Generate CycloneDX SBOM
+     step 11  success  Run sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+     step 12  success  Sign digest and attach SBOM attestation (keyless)
+     step 13  success  Record release identity
+     step 14  success  Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+     step 25  success  Post Build (and push on main) — the only build in the pipeline
+     step 26  success  Post Log in to GHCR
+     step 27  success  Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+     step 28  success  Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+     step 29  success  Complete job
+JOB  Promote to dev / dev                     success  2026-11-04T09:57:00Z -> 2026-11-04T09:57:14Z
+     https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665/job/126509636506
+     step  1  success  Set up job
+     step  2  success  Run sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+     step  3  success  Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step  4  success  Gate — signature must verify for this repository's workflow identity
+     step  5  success  Point dev tag at the same digest (no rebuild)
+     step 10  success  Post Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step 11  success  Complete job
+JOB  Promote to staging / staging             success  2026-11-04T10:11:13Z -> 2026-11-04T10:11:27Z
+     https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665/job/126509743342
+     step  1  success  Set up job
+     step  2  success  Run sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+     step  3  success  Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step  4  success  Gate — signature must verify for this repository's workflow identity
+     step  5  success  Point staging tag at the same digest (no rebuild)
+     step 10  success  Post Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step 11  success  Complete job
+JOB  Promote to production / production       success  2026-11-04T10:11:47Z -> 2026-11-04T10:12:03Z
+     https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665/job/126515018036
+     step  1  success  Set up job
+     step  2  success  Run sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+     step  3  success  Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step  4  success  Gate — signature must verify for this repository's workflow identity
+     step  5  success  Point production tag at the same digest (no rebuild)
+     step 10  success  Post Run docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+     step 11  success  Complete job
+# Check-run annotations for all 5 jobs (GET /commits/9d747ff/check-runs): one 'notice' each, the ubuntu-latest -> Ubuntu 26
+# label migration notice. No warnings or errors.
+
+## A3. Deployment approvals (GET /actions/runs/41810479665/approvals)
+Girish7010 approved  environments=['production'] comment=''
+Girish7010 approved  environments=['staging'] comment=''
+
+## A4. Artifacts uploaded by the run (GET /actions/runs/41810479665/artifacts)
+release-identity                                                                                                    333 bytes  sha256:32834a749643926486b1237b9962bc3db899f1b7fd40ce999f39e164119428f1
+Girish7010~cloud-agnostic-zero-downtime-platform~YWLYXV.dockerbuild                                               44626 bytes  sha256:fc5abd9d19e0c8e8e83435315e5d82683c77ae211b8d885bc2f343cc12edf9ff
+trivy-report                                                                                                      41419 bytes  sha256:34bc859f3b3b501fda7ee69385aaf1184bf042404a34556d743596e67dddebff
+girish7010-cloud-platform-reference_sha256_5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3.cyclonedx.json   243100 bytes  sha256:44fd2e9136a6c7f4ab5a7053d6ccbd480fc6fd91d9e19bf6c7337fb19feedca7
+# Artifact contents need a GitHub login to download, so they weren't downloaded or inspected.
+
+## A5. All runs of this workflow (GET /actions/runs)
+run 41810479665  #5  9d747ff  completed success  2026-11-04T09:52:50Z  https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41810479665
+run 41808718144  #4  9e04255  completed success  2026-11-04T09:35:02Z  https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41808718144
+run 41804504092  #3  2eb6bad  completed success  2026-11-04T09:04:56Z  https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41804504092
+run 41798284612  #2  bdf5961  completed failure  2026-11-04T08:16:50Z  https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41798284612
+run 41787637662  #1  4bd862f  completed failure  2026-11-04T06:45:20Z  https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/actions/runs/41787637662
+# Runs #1 and #2 FAILED at 'Vulnerability scan' (setup-trivy installer exit code 6, before any scan ran); see limitations.md.
+# Run #3 (2eb6bad) was the first green run. Run #4 (9e04255) was a README edit made in the GitHub web UI.
+# Run #5 (9d747ff) is the final run. 9d747ff is the last commit that changes anything other than this evidence folder.
+
+## A6. Trivy result
+# Step 8 'Vulnerability scan (fail on fixable CRITICAL/HIGH)' = success. In ci.yml the step counts findings with jq and
+# exits 1 if there are any (scanner errors exit 2), so success means 0 fixable CRITICAL/HIGH (os + library packages) in the
+# built digest, scanned by Trivy 0.70.0 (container pinned by digest sha256:be1190af…961a41e). The trivy-report artifact (41419 bytes) was
+# uploaded but not downloaded (needs login). The run-summary text for run #5 wasn't copied, and the digest wasn't re-scanned locally.
+
+## A7. Independent check: environment tags in GHCR resolve to run #5's digest (anonymous registry API)
+$ date -u; curl https://ghcr.io/v2/girish7010/cloud-platform-reference/tags/list
+2026-11-04T10:36:28Z
+{"name":"girish7010/cloud-platform-reference","tags":["sha-4bd862f4c691539982ba1cad5f7a95ac377157e8","sha-bdf59614f644732f99fb80354870e7b1b0150685","sha-2eb6badf901271bacdd4faf48ceff8844e49a5a5","sha256-a14dde1a85838727af0071a1dc2553f17e8d93deebbd84497759b43b0798498d","dev","staging","production","sha-9e04255a26b9f6b0aa204aa210864147e37cd7c8","sha256-a29425e47b9bb32353cef52c48c44952ec8653804cef80774b5e568c5ba46f2b","sha-9d747ffb66efe81a899fcc4e622557cc7c72aab9","sha256-5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"]}
+
+
+:sha-9d747ffb66efe81a899fcc4e622557cc7c72aab9   -> docker-content-digest: sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+:dev                                            -> docker-content-digest: sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+:staging                                        -> docker-content-digest: sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+:production                                     -> docker-content-digest: sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3
+# All three environment tags and the commit tag hold the single digest built by run #5. Promotion moved tags; nothing was rebuilt.
+
+## A8. Independent check: keyless Cosign signature and SBOM attestation (cosign v3.1.3, same identity policy as promote.yml)
+$ date -u
+2026-11-04T10:33:52Z
+$ cosign verify ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3 --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp '^https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/\.github/workflows/ci\.yml@refs/heads/main$'
+
+Verification for ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3 --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate was verified using trusted certificate authority certificates
+
+[{"critical":{"identity":{"docker-reference":"ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"},"image":{"docker-manifest-digest":"sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"},"type":"https://sigstore.dev/cosign/sign/v1"},"optional":{}},{"critical":{"identity":{"docker-reference":"ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"},"image":{"docker-manifest-digest":"sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"},"type":"https://cyclonedx.org/bom"},"optional":{}}]
+[exit code: 0]
+
+$ cosign verify-attestation ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3 --type cyclonedx --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp '^https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/\.github/workflows/ci\.yml@refs/heads/main$' > att.json
+[exit code: 0]
+$ decode the attestation payload (in-toto statement) from att.json
+predicateType: https://cyclonedx.org/bom
+subject: [{"name": "ghcr.io/girish7010/cloud-platform-reference", "digest": {"sha256": "5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3"}}]
+SBOM: CycloneDX 1.7 | components: 2813 | generator: syft 1.54.0
+
+$ negative control: cosign verify with a different repository identity must fail
+failed to verify certificate identity: no matching CertificateIdentity found, last error: expected SAN value to match regex "^https://github.com/someone-else/.*$", got "https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/.github/workflows/ci.yml@refs/heads/main"
+[exit code: 1]
+
+$ cosign verify ghcr.io/girish7010/cloud-platform-reference@sha256:5bd2b6b467805b03c33440c56a84252c470701bc768f0e416782dbffe8ddb0e3 --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp '^https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform/\.github/workflows/ci\.yml@refs/heads/main$' --certificate-github-workflow-sha 9d747ffb66efe81a899fcc4e622557cc7c72aab9 --certificate-github-workflow-trigger push > /dev/null
+[exit code: 0]
+$ negative control: the same check pinned to a different commit (2eb6bad) must fail
+failed to verify certificate identity: no matching CertificateIdentity found, last error: expected GithubWorkflowSHA to be "2eb6badf901271bacdd4faf48ceff8844e49a5a5", got "9d747ffb66efe81a899fcc4e622557cc7c72aab9"
+[exit code: 1]
+# The signing certificate binds this digest to ci.yml on refs/heads/main, triggered by a push of commit 9d747ff.
+
+## A9. What run #5 proves, and what it doesn't
+# PROVEN (CI, run 41810479665, commit 9d747ff): unit tests, shellcheck, Helm lint/render, terraform fmt/validate; exactly one
+#   image build; Trivy 0.70.0 gate passed (0 fixable CRITICAL/HIGH); CycloneDX SBOM generated (syft); keyless Cosign signature
+#   + SBOM attestation; dev, staging and production each verified the signature and pointed their tag at the same digest;
+#   staging and production each needed a manual approval by Girish7010, and both were given.
+# PROVEN (independently, from this laptop): the tag digests, signature, attestation, identity and commit binding above.
+# NOT PROVEN by CI: any deployment to a cluster or cloud (there is no cloud cluster; promotion moves GHCR tags only), any AWS
+#   resource, the 2,250 rps peak, or behaviour of the assignment's black-box application (the image is the reference harness).
+# NOT INDEPENDENTLY CHECKED: job logs and artifact contents (they need a GitHub login), and a local Trivy re-scan.
+# FOLLOWING COMMIT: the commit that adds this record changes only evidence/submission-2026-11-04/ and was pushed with
+#   [skip ci], so it does not trigger a run #6; the dev/staging/production tags stay on run #5's digest. Check with
+#   `git diff --name-only 9d747ff origin/main`.
+
+# ============================================================================================================================
+# EARLIER RECORD: run #3 (41804504092), as recorded at 2026-11-04T09:48Z. Kept unchanged; tag states in it are historical.
+# ============================================================================================================================
+# GitHub Actions evidence: delivery-pipeline (.github/workflows/ci.yml)
 # Recorded 2026-11-04T09:48:09Z from the public GitHub REST API (unauthenticated, read-only) plus independent checks run from this laptop.
 # Everything below is copied from tool output. Nothing was typed by hand except these comments and section headings.
 

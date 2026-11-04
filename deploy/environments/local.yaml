@@ -1,0 +1,17 @@
+# Local kind target. Images pulled BY DIGEST from the local OCI registry
+# (localhost:5001, scripts/local-registry.sh) — same mechanism the cloud
+# environments use with GHCR digests. Digest = reference harness v6 (2026-11-04).
+api:
+  appVersion: v6
+  image:
+    repository: localhost:5001/cloud-platform-reference
+    digest: sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df
+worker:
+  image:
+    repository: localhost:5001/cloud-platform-reference
+    digest: sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df
+  keda:
+    enabled: true        # KEDA 2.21.0 installed in namespace keda (evidence/submission-2026-11-04/keda-install)
+    minReplicas: 1
+    maxReplicas: 6       # laptop cap; cloud values use the capacity plan
+    lagPerReplica: 5

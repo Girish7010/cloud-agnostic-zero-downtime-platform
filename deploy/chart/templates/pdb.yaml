@@ -2,7 +2,24 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ .Release.Name }}-api
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
 spec:
-  minAvailable: 1
+  minAvailable: {{ .Values.api.pdb.minAvailable }}
   selector:
-    matchLabels: { app: {{ .Release.Name }}-api }
+    matchLabels:
+      app: {{ .Release.Name }}-api
+---
+# Voluntary disruptions (node drains) evict at most one worker at a time;
+# each evicted worker still gets its full termination grace period to drain.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-worker

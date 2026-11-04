@@ -1,0 +1,69 @@
+{{- if .Values.api.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Release.Name }}-api
+  minReplicas: {{ .Values.api.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.api.autoscaling.targetCPUUtilization }}
+  behavior:
+    scaleUp:
+      # React immediately; allow doubling (or +N pods) every 15s so 15x is
+      # reachable in ~4 doublings (~1 min of HPA decisions) if nodes exist.
+      stabilizationWindowSeconds: 0
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: {{ .Values.api.autoscaling.scaleUpPods }}
+          periodSeconds: 15
+    scaleDown:
+      # Scale down slowly to avoid flapping after a peak.
+      stabilizationWindowSeconds: {{ .Values.api.autoscaling.scaleDownStabilizationSeconds }}
+      policies:
+        - type: Percent
+          value: 20
+          periodSeconds: 60
+{{- end }}
+{{- if .Values.worker.keda.enabled }}
+---
+# Queue-depth autoscaling for workers (requires KEDA installed by the platform layer).
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ .Release.Name }}-worker
+  minReplicaCount: {{ .Values.worker.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.worker.keda.maxReplicas }}
+  pollingInterval: 10
+  # Long cooldown + worker grace period = scale-in never kills a running job.
+  cooldownPeriod: 300
+  triggers:
+    - type: redis-streams
+      metadata:
+        # FQDN: the KEDA operator resolves this from its own namespace.
+        address: {{ .Values.worker.keda.redisAddress | default (printf "%s-redis.%s.svc.cluster.local:6379" .Release.Name .Release.Namespace) | quote }}
+        stream: {{ .Values.worker.keda.stream | quote }}
+        consumerGroup: {{ .Values.worker.keda.consumerGroup | quote }}
+        # Target backlog per worker replica (undelivered + pending entries).
+        lagCount: {{ .Values.worker.keda.lagPerReplica | quote }}
+{{- end }}

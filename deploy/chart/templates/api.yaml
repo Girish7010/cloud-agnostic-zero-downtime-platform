@@ -2,21 +2,71 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-api
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}-api
 spec:
+  {{- if not .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never remove serving capacity before a new pod is Ready.
+      maxUnavailable: {{ .Values.api.strategy.maxUnavailable }}
+      maxSurge: {{ .Values.api.strategy.maxSurge }}
+  minReadySeconds: {{ .Values.api.minReadySeconds }}
+  progressDeadlineSeconds: {{ .Values.api.progressDeadlineSeconds }}
   selector:
-    matchLabels: { app: {{ .Release.Name }}-api }
+    matchLabels:
+      app: {{ .Release.Name }}-api
   template:
     metadata:
-      labels: { app: {{ .Release.Name }}-api }
+      labels:
+        {{- include "platform-app.labels" . | nindent 8 }}
+        app: {{ .Release.Name }}-api
+        app.kubernetes.io/component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.api.port | quote }}
+        prometheus.io/path: /metrics
     spec:
+      serviceAccountName: {{ .Release.Name }}-app
+      automountServiceAccountToken: false
+      # preStop (10s) + in-flight request drain must fit inside this window.
       terminationGracePeriodSeconds: 45
+      securityContext:
+        {{- include "platform-app.podSecurityContext" . | nindent 8 }}
+      {{- include "platform-app.residencyAffinity" . | nindent 6 }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: {{ .Release.Name }}-api
       containers:
         - name: api
-          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          image: {{ include "platform-app.image" .Values.api.image | quote }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.api.port }}
+          env:
+            - name: REDIS_URL
+              value: {{ include "platform-app.redisUrl" (dict "Values" (dict "redisUrl" .Values.api.redisUrl) "Release" .Release) | quote }}
+            - name: APP_VERSION
+              value: {{ .Values.api.appVersion | quote }}
+            {{- with .Values.api.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          # Startup probe protects slow starts (e.g. black-box startup migrations)
+          # from liveness kills: up to 30 x 2s = 60s to become healthy.
+          startupProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             httpGet: { path: /readyz, port: http }
             periodSeconds: 5
@@ -27,19 +77,30 @@ spec:
             failureThreshold: 3
           lifecycle:
             preStop:
+              # Keep serving while endpoints/load balancers stop routing to this pod.
               exec:
                 command: ["/bin/sh", "-c", "sleep 10"]
+          securityContext:
+            {{- include "platform-app.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
           resources:
-            requests: { cpu: 250m, memory: 256Mi }
-            limits: { cpu: "1", memory: 1Gi }
+            {{- toYaml .Values.api.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-api
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
 spec:
-  selector: { app: {{ .Release.Name }}-api }
+  selector:
+    app: {{ .Release.Name }}-api
   ports:
     - name: http
       port: 8080
       targetPort: http
+  type: ClusterIP

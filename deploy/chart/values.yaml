@@ -1,7 +1,95 @@
+# Defaults = local kind target with the reference test-harness image.
+# Cloud/tenant values override these (see deploy/environments and gitops/tenants).
+
+tenant:
+  id: shared
+  mode: shared          # shared | dedicated
+  residency: eu         # eu | us
+  region: local         # declared region; validated against residency by scripts/onboard-tenant.sh
+  # Scheduler-level residency guard: pods may only land on nodes labelled with
+  # an allowed topology.kubernetes.io/region (cloud nodes carry this label).
+  enforceRegion: false
+  allowedRegions: []
+
+serviceAccount:
+  annotations: {}
+
+networkPolicy:
+  enabled: true
+
 api:
-  image: { repository: nginx, tag: "1.27-alpine" }
-  replicas: 1
+  image:
+    repository: cloud-platform-reference
+    tag: v1
+    digest: ""          # set by promotion; wins over tag when present
+    pullPolicy: IfNotPresent
+  appVersion: v1
+  replicas: 2
   port: 8080
+  extraEnv: []
+  strategy:
+    maxUnavailable: 0
+    maxSurge: 1
+  minReadySeconds: 5
+  progressDeadlineSeconds: 300
+  pdb:
+    minAvailable: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5       # local cap; cloud values raise this (see capacity plan)
+    targetCPUUtilization: 70
+    scaleUpPods: 4
+    scaleDownStabilizationSeconds: 120
+  redisUrl: ""          # default redis://<release>-redis:6379/0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 worker:
-  image: { repository: busybox, tag: "1.36" }
+  image:
+    repository: cloud-platform-reference
+    tag: v1
+    digest: ""
+    pullPolicy: IfNotPresent
   replicas: 1
+  terminationGracePeriodSeconds: 75
+  extraEnv: []
+  redisUrl: ""          # default redis://<release>-redis:6379/0
+  keda:
+    enabled: false       # requires KEDA (platform layer); not installed on the local laptop cluster
+    minReplicas: 1
+    maxReplicas: 30
+    lagPerReplica: 5
+    redisAddress: ""     # default <release>-redis.<namespace>.svc.cluster.local:6379
+    stream: jobs
+    consumerGroup: job-workers
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  enabled: true          # local only; false in cloud (managed Redis)
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  port: 6379
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

@@ -1,6 +1,10 @@
 apiVersion: v2
-name: blackbox-app
-description: Deployment wrapper for the supplied stateless API and worker
+name: platform-app
+description: >-
+  Reusable deployment template for the API + queue worker (+ local Redis).
+  The same chart renders the shared stack and every dedicated tenant stack;
+  only values differ. Currently exercised with the reference test-harness
+  image, not the assignment's black-box application.
 type: application
-version: 0.1.0
-appVersion: "provided-by-assignment"
+version: 0.2.0
+appVersion: "reference-harness"

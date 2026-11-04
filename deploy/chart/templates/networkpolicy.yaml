@@ -1,0 +1,67 @@
+{{- if .Values.networkPolicy.enabled }}
+# Tenant isolation: API only accepts traffic from its own namespace and from
+# namespaces explicitly labelled as ingress/monitoring. Redis only from this
+# release's api/worker pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Release.Name }}-api
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              platform.io/allow-tenant-ingress: "true"
+      ports:
+        - port: {{ .Values.api.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Release.Name }}-worker
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              platform.io/allow-tenant-ingress: "true"
+      ports:
+        - port: 9090
+{{- if .Values.redis.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-redis
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Release.Name }}-redis
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: {{ .Release.Name }}
+        - namespaceSelector:
+            matchLabels:
+              platform.io/allow-tenant-ingress: "true"
+      ports:
+        - port: {{ .Values.redis.port }}
+{{- end }}
+{{- end }}

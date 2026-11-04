@@ -1,0 +1,37 @@
+# staging (cloud) values. The digest is written by promotion (PR from the
+# promote job); it is the SAME digest in dev, staging and production.
+# [DESIGN] — no cloud environment has been provisioned yet.
+api:
+  image:
+    repository: ghcr.io/girish7010/cloud-platform-reference
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000  # set by promotion
+  appVersion: promoted
+  redisUrl: rediss://redis.staging.internal:6379/0   # from provider output redis_host (TLS)
+  pdb:
+    minAvailable: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+worker:
+  image:
+    repository: ghcr.io/girish7010/cloud-platform-reference
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  redisUrl: rediss://redis.staging.internal:6379/0
+  keda:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    lagPerReplica: 2
+    redisAddress: redis.staging.internal:6379
+  resources:
+    requests: { cpu: 250m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+redis:
+  enabled: false        # managed Valkey/ElastiCache from the provider layer
+tenant:
+  enforceRegion: true
+  allowedRegions: [eu-central-1, eu-west-1]

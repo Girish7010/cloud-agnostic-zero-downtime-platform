@@ -2,29 +2,69 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-worker
+  labels:
+    {{- include "platform-app.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}-worker
 spec:
+  {{- if not .Values.worker.keda.enabled }}
   replicas: {{ .Values.worker.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
     rollingUpdate:
+      # Start the replacement first; old pod then drains its current job.
       maxUnavailable: 0
       maxSurge: 1
   selector:
-    matchLabels: { app: {{ .Release.Name }}-worker }
+    matchLabels:
+      app: {{ .Release.Name }}-worker
   template:
     metadata:
-      labels: { app: {{ .Release.Name }}-worker }
+      labels:
+        {{- include "platform-app.labels" . | nindent 8 }}
+        app: {{ .Release.Name }}-worker
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
     spec:
-      terminationGracePeriodSeconds: 75
+      serviceAccountName: {{ .Release.Name }}-app
+      automountServiceAccountToken: false
+      # Max job 60s + 15s margin. No preStop sleep: a worker receives no
+      # Service traffic, so SIGTERM goes straight to the app, which stops
+      # reading new jobs and finishes + acknowledges the current one.
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- include "platform-app.podSecurityContext" . | nindent 8 }}
+      {{- include "platform-app.residencyAffinity" . | nindent 6 }}
       containers:
         - name: worker
-          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
-          # Confirm the application's signal handling, queue acknowledgement,
-          # retry and idempotency behavior before relying on this rollout.
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "sleep 10"]
+          image: {{ include "platform-app.image" .Values.worker.image | quote }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          command: ["python", "-m", "app.worker.main"]
+          env:
+            - name: REDIS_URL
+              value: {{ include "platform-app.redisUrl" (dict "Values" (dict "redisUrl" .Values.worker.redisUrl) "Release" .Release) | quote }}
+            {{- with .Values.worker.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: 9090
+          # Liveness only (process responsive). No readiness: workers pull work,
+          # they are not behind a Service.
+          livenessProbe:
+            httpGet: { path: /metrics, port: metrics }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 4
+          securityContext:
+            {{- include "platform-app.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
           resources:
-            requests: { cpu: 250m, memory: 256Mi }
-            limits: { cpu: "1", memory: 1Gi }
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}

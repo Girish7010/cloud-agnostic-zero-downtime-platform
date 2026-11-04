@@ -1,0 +1,18 @@
+[2026-11-04 11:24:03] Current deployed revision: 25
+[2026-11-04 11:24:03] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:24:03 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 26
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:25:00] Gate 1 passed: revision 26 rolled out and Ready.
+[2026-11-04 11:25:31] Analysis step 1/4: FAIL pods=5 requests=2066 errors=666 error_rate=0.3224 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:25:31] GATE 2 FAILED: rolling back revision 26 -> 25
+Rollback was a success! Happy Helming!
+[2026-11-04 11:26:27] Rollback complete.
+25      	Wed Nov  4 11:19:47 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+26      	Wed Nov  4 11:24:03 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+27      	Wed Nov  4 11:25:31 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 25                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

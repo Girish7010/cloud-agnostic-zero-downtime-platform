@@ -1,0 +1,223 @@
+# Terraform validation evidence
+# Generated (UTC): 2026-11-04T05:45:12Z
+# Host: Linux x86_64
+# Scope: fmt + init -backend=false + validate only. No plan/apply; no AWS API calls; no cloud resources exist.
+
+$ terraform version
+Terraform v1.16.6
+on linux_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.17.1. You can update by downloading from https://developer.hashicorp.com/terraform/install
+[exit code: 0]
+
+$ terraform fmt -check -recursive -diff infra
+[exit code: 0]
+
+================================================================
+## infra/bootstrap/aws-state
+================================================================
+$ terraform -chdir=infra/bootstrap/aws-state fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/bootstrap/aws-state init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/bootstrap/aws-state validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/modules/aws-stack
+================================================================
+$ terraform -chdir=infra/modules/aws-stack fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/modules/aws-stack init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/time v0.14.2
+- Using previously-installed hashicorp/tls v4.4.2
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/modules/aws-stack validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/providers/aws
+================================================================
+$ terraform -chdir=infra/providers/aws fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/aws init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/aws v6.71.0
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/aws validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/live/aws/shared-eu
+================================================================
+$ terraform -chdir=infra/live/aws/shared-eu fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/shared-eu init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Using previously-installed hashicorp/time v0.14.2
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/cloudinit v2.4.1
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/random v3.9.1
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/shared-eu validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/live/aws/dedicated-acme-eu
+================================================================
+$ terraform -chdir=infra/live/aws/dedicated-acme-eu fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/dedicated-acme-eu init -backend=false -input=false -no-color
+Initializing modules...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/cloudinit from the dependency lock file
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/tls from the dependency lock file
+- Reusing previous version of hashicorp/time from the dependency lock file
+- Reusing previous version of hashicorp/null from the dependency lock file
+- Using previously-installed hashicorp/aws v6.71.0
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/tls v4.4.2
+- Using previously-installed hashicorp/time v0.14.2
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/cloudinit v2.4.1
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/live/aws/dedicated-acme-eu validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/providers/local
+================================================================
+$ terraform -chdir=infra/providers/local fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/local init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of tehcyx/kind from the dependency lock file
+- Using previously-installed tehcyx/kind v0.13.0
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/providers/local validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/platform
+================================================================
+$ terraform -chdir=infra/platform fmt -check -recursive
+[exit code: 0]
+
+$ terraform -chdir=infra/platform init -backend=false -input=false -no-color
+Initializing provider plugins...
+- Reusing previous version of hashicorp/kubernetes from the dependency lock file
+- Reusing previous version of hashicorp/random from the dependency lock file
+- Reusing previous version of hashicorp/helm from the dependency lock file
+- Using previously-installed hashicorp/kubernetes v3.4.0
+- Using previously-installed hashicorp/random v3.9.1
+- Using previously-installed hashicorp/helm v3.3.0
+
+Terraform has been successfully initialized!
+[exit code: 0]
+
+$ terraform -chdir=infra/platform validate -no-color
+Success! The configuration is valid.
+
+[exit code: 0]
+
+================================================================
+## infra/modules/aws-stack: residency guard-rail tests (mock aws provider, no AWS API calls)
+================================================================
+$ terraform -chdir=infra/modules/aws-stack test -no-color
+tests/residency.tftest.hcl... in progress
+  run "eu_tenant_in_us_region_is_rejected"... pass
+  run "provider_region_must_match_declared_region"... pass
+  run "invalid_deployment_mode_is_rejected"... pass
+  run "eu_tenant_in_eu_region_plans"... pass
+tests/residency.tftest.hcl... tearing down
+tests/residency.tftest.hcl... pass
+
+Success! 4 passed, 0 failed.
+[exit code: 0]
+
+## Optional linters
+$ command -v tflint
+tflint: not installed (skipped, not installed per instructions)
+
+$ command -v checkov
+checkov: not installed (skipped, not installed per instructions)
+

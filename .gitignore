@@ -34,3 +34,7 @@ node_modules/
 
 # Evidence generated locally
 evidence/tmp/
+
+# Database backup files (may contain data; never commit)
+backups/
+*.dump

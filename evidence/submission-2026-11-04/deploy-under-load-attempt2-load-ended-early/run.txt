@@ -1,0 +1,50 @@
+== deploy-under-load started 2026-11-04 11:15:12 IST
+k6 env: PROFILE=constant RATE=150 DURATION=150s JOB_EVERY=150 MAX_FAIL_RATE=0
+rollout args: -f deploy/environments/local.yaml --set api.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set worker.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set api.appVersion=v5
+memory before:
+               total        used        free      shared  buff/cache   available
+Mem:           6.9Gi       4.6Gi       722Mi       818Mi       2.8Gi       2.4Gi
+Swap:          4.0Gi       3.9Gi       109Mi
+21      	Wed Nov  4 11:11:52 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+22      	Wed Nov  4 11:13:24 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+== rollout starting 11:15:38
+[2026-11-04 11:15:38] Current deployed revision: 22
+[2026-11-04 11:15:38] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:15:38 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 23
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:16:35] Gate 1 passed: revision 23 rolled out and Ready.
+[2026-11-04 11:17:07] Analysis step 1/4: PASS pods=5 requests=3324 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:17:31] Analysis step 2/4: PASS pods=5 requests=3477 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:17:53] Analysis step 3/4: PASS pods=5 requests=2625 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:18:14] Analysis step 4/4: FAIL inconclusive: only 0 requests (< 50) across 5 pods
+[2026-11-04 11:18:14] GATE 2 FAILED: rolling back revision 23 -> 22
+Rollback was a success! Happy Helming!
+[2026-11-04 11:19:10] Rollback complete.
+22      	Wed Nov  4 11:13:24 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+23      	Wed Nov  4 11:15:38 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+24      	Wed Nov  4 11:18:14 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+== rollout finished 11:19:10 exit=1
+== k6 summary:
+{"profile":"constant","requests":22501,"rps_avg":150,"failed_rate":0,"failed_count":0,"p95_ms":5.38,"p99_ms":null,"max_ms":67.98,"dropped_iterations":0,"thresholds_ok":true}
+== k6 checks:
+K6_SUMMARY_JSON {"profile":"constant","requests":22501,"rps_avg":150,"failed_rate":0,"failed_count":0,"p95_ms":5.38,"p99_ms":null,"max_ms":67.98,"dropped_iterations":0,"thresholds_ok":true}
+load ✓ [ 100% ] 000/030 VUs  2m30s  150.00 iters/s
+== min ready endpoints during test: 5
+22      	Wed Nov  4 11:13:24 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+23      	Wed Nov  4 11:15:38 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+24      	Wed Nov  4 11:18:14 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+NAME                     IMAGE                                                                                                             READY
+devops-platform-api      localhost:5001/cloud-platform-reference@sha256:1d62741c6540d32f4a6fd935ac92f5e0c6e4c6932f2380d5f3680846709c9a9e   5
+devops-platform-redis    redis:7-alpine                                                                                                    1
+devops-platform-worker   localhost:5001/cloud-platform-reference@sha256:1d62741c6540d32f4a6fd935ac92f5e0c6e4c6932f2380d5f3680846709c9a9e   1
+migration-postgres       postgres:16-alpine                                                                                                1
+memory after:
+Mem:           6.9Gi       4.5Gi       696Mi       705Mi       2.8Gi       2.5Gi
+Swap:          4.0Gi       3.9Gi        57Mi
+== deploy-under-load finished 2026-11-04 11:19:10 IST

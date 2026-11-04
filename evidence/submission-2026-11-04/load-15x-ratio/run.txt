@@ -1,0 +1,18 @@
+== 15x ratio test started 2026-11-04 11:57:50 IST base=10rps peak=150rps job_every=30 prefix=ramp-115750
+               total        used        free      shared  buff/cache   available
+Mem:           6.9Gi       4.8Gi       206Mi       608Mi       2.8Gi       2.1Gi
+Swap:          4.0Gi       4.0Gi        27Mi
+== load finished after 365s: {"profile":"ramp15x","requests":35099,"rps_avg":97.5,"failed_rate":0,"failed_count":0,"p95_ms":4.03,"p99_ms":null,"max_ms":76.56,"jobs_accepted":1170,"dropped_iterations":0,"thresholds_ok":true}
+== waiting for queue drain and scale-in (worker -> 1, api -> 2), max 12 min
+== verification 12:06:39
+jobs accepted by API (k6 202s): 1170
+jobs with completion marker:    1170
+stream lag: 0   pending (unacked): 0
+peak api replicas: 5  peak worker replicas: 6
+first sample api>2: 11:59:30  first sample worker>1: 11:58:57
+final: api=2 worker=1
+NAME                              REFERENCE                           TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+devops-platform-api               Deployment/devops-platform-api      cpu: 3%/70%   2         5         3          56m
+keda-hpa-devops-platform-worker   Deployment/devops-platform-worker   0/5 (avg)     1         6         1          9m14s
+RESULT: PASS (no accepted job lost across scale-up and scale-in)
+== finished 2026-11-04 12:06:39 IST

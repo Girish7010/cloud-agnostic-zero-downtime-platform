@@ -1,0 +1,74 @@
+# Helm validation 2026-11-04 12:07:06 IST
+version.BuildInfo{Version:"v4.3.0", GitCommit:"bec5b06ed841fe5269972d864d5177944fd5970f", GitTreeState:"clean", GoVersion:"go1.27.1", KubeClientVersion:"v1.37"}
+$ helm lint deploy/chart
+==> Linting deploy/chart
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+$ helm template ci deploy/chart -f deploy/environments/dev.yaml
+  rendered OK (10 objects)
+$ helm template ci deploy/chart -f deploy/environments/local.yaml
+  rendered OK (14 objects)
+$ helm template ci deploy/chart -f deploy/environments/production.yaml
+  rendered OK (10 objects)
+$ helm template ci deploy/chart -f deploy/environments/staging.yaml
+  rendered OK (10 objects)
+$ helm template ci deploy/chart -f gitops/tenants/acme-eu/values.yaml
+  rendered OK (13 objects)
+$ helm template ci deploy/chart -f gitops/tenants/globex-eu/values.yaml
+  rendered OK (13 objects)
+$ helm template ci deploy/chart -f gitops/tenants/shared/values.yaml
+  rendered OK (13 objects)
+$ helm template (local + shared values) | kubectl apply --dry-run=server
+networkpolicy.networking.k8s.io/devops-platform-api configured (server dry run)
+networkpolicy.networking.k8s.io/devops-platform-worker configured (server dry run)
+networkpolicy.networking.k8s.io/devops-platform-redis configured (server dry run)
+poddisruptionbudget.policy/devops-platform-api configured (server dry run)
+poddisruptionbudget.policy/devops-platform-worker configured (server dry run)
+serviceaccount/devops-platform-app configured (server dry run)
+persistentvolumeclaim/devops-platform-redis-data configured (server dry run)
+service/devops-platform-api configured (server dry run)
+service/devops-platform-redis configured (server dry run)
+deployment.apps/devops-platform-api configured (server dry run)
+deployment.apps/devops-platform-redis configured (server dry run)
+deployment.apps/devops-platform-worker configured (server dry run)
+horizontalpodautoscaler.autoscaling/devops-platform-api configured (server dry run)
+Warning: PollingInterval is configured but is not relevant for scaling. It only affects scaling when minReplicaCount = 0, idleReplicaCount is set, or useCachedMetrics is enabled, but it still controls how often KEDA refreshes the ScaledObject status conditions and events
+Warning: CooldownPeriod is configured but is not relevant. CooldownPeriod is only relevant when minReplicaCount = 0 or idleReplicaCount is set
+scaledobject.keda.sh/devops-platform-worker configured (server dry run)
+
+# Final release state
+35      	Wed Nov  4 11:57:24 2026	deployed  	platform-app-0.2.0	reference-harness	Upgrade complete                      
+2       	Wed Nov  4 11:36:56 2026	deployed  	platform-app-0.2.0	reference-harness	Upgrade complete
+2       	Wed Nov  4 11:38:05 2026	deployed  	platform-app-0.2.0	reference-harness	Upgrade complete
+2       	Wed Nov  4 11:54:03 2026	deployed  	keda-2.21.0	2.21.0     	Upgrade complete                                   
+NAMESPACE          NAME                                              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-platform    deployment.apps/devops-platform-api               2/2     2            2           18h
+devops-platform    deployment.apps/devops-platform-redis             1/1     1            1           18h
+devops-platform    deployment.apps/devops-platform-worker            1/1     1            1           18h
+keda               deployment.apps/keda-admission-webhooks           1/1     1            1           25m
+keda               deployment.apps/keda-operator                     1/1     1            1           25m
+keda               deployment.apps/keda-operator-metrics-apiserver   1/1     1            1           25m
+tenant-acme-eu     deployment.apps/tenant-acme-eu-api                1/1     1            1           34m
+tenant-acme-eu     deployment.apps/tenant-acme-eu-redis              1/1     1            1           34m
+tenant-acme-eu     deployment.apps/tenant-acme-eu-worker             1/1     1            1           34m
+tenant-globex-eu   deployment.apps/tenant-globex-eu-api              1/1     1            1           33m
+tenant-globex-eu   deployment.apps/tenant-globex-eu-redis            1/1     1            1           33m
+tenant-globex-eu   deployment.apps/tenant-globex-eu-worker           1/1     1            1           33m
+
+NAMESPACE          NAME                                                                  REFERENCE                           TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+devops-platform    horizontalpodautoscaler.autoscaling/devops-platform-api               Deployment/devops-platform-api      cpu: 4%/70%   2         5         2          56m
+devops-platform    horizontalpodautoscaler.autoscaling/keda-hpa-devops-platform-worker   Deployment/devops-platform-worker   0/5 (avg)     1         6         1          9m45s
+tenant-acme-eu     horizontalpodautoscaler.autoscaling/tenant-acme-eu-api                Deployment/tenant-acme-eu-api       cpu: 6%/70%   1         2         1          34m
+tenant-globex-eu   horizontalpodautoscaler.autoscaling/tenant-globex-eu-api              Deployment/tenant-globex-eu-api     cpu: 6%/70%   1         2         1          33m
+
+NAMESPACE         NAME                                          SCALETARGETKIND      SCALETARGETNAME          MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS        AUTHENTICATIONS   AGE
+devops-platform   scaledobject.keda.sh/devops-platform-worker   apps/v1.Deployment   devops-platform-worker   1     6     True    False    False      False    redis-streams                     9m45s
+
+NAMESPACE          NAME                                                 MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+devops-platform    poddisruptionbudget.policy/devops-platform-api       1               N/A               1                     18h
+devops-platform    poddisruptionbudget.policy/devops-platform-worker    N/A             1                 1                     56m
+tenant-acme-eu     poddisruptionbudget.policy/tenant-acme-eu-api        1               N/A               0                     34m
+tenant-acme-eu     poddisruptionbudget.policy/tenant-acme-eu-worker     N/A             1                 1                     34m
+tenant-globex-eu   poddisruptionbudget.policy/tenant-globex-eu-api      1               N/A               0                     33m
+tenant-globex-eu   poddisruptionbudget.policy/tenant-globex-eu-worker   N/A             1                 1                     33m

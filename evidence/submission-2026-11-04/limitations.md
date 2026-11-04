@@ -1,0 +1,40 @@
+# Limitations, failed attempts and unrun requirements
+
+Nothing here has been hidden or edited to look better. The raw logs are kept exactly as produced, failed attempts included.
+
+## Environment limits
+- **Cluster:** a single-node kind cluster (`devops-assignment`) on a laptop with 6.9 GiB RAM, 8 CPUs, and swap at about 95–100% for most of the session because of host processes. Every result is **local**; none is from a cloud.
+- **Application:** the reference test harness in `app/`, **not** the assignment's black-box application. Its behaviour (stateless API, Redis Streams worker) mimics the contract only.
+- **Load generator:** k6 ran *inside the cluster* against the ClusterIP Service, on the same node as the workload. Generator and system under test share CPU, so absolute latencies aren't representative of production.
+
+## Not run / not implemented
+| Requirement | Status | Why / next step |
+|---|---|---|
+| 2,250 rps (15x of the real baseline) | **Not run** | Needs cloud capacity; the user chose no AWS spend today. Only a 15x *ratio* (10 → 150 rps) ran locally. |
+| AWS (or any cloud) infrastructure | **Not provisioned** | IaC passes `terraform validate` and `terraform test` (mocked provider) only. |
+| Remote state, drift detection | **Implemented, not executed** | Depends on the bootstrap apply. |
+| Argo CD GitOps, Argo Rollouts canary, kube-prometheus-stack, alerts | **Config only** | Not installed (laptop memory). The local equivalent of the gates is `scripts/gated-rollout.sh`, which was tested. |
+| GitHub Actions publish/sign/promote | **Implemented; first run happens on push** | Check the Actions run result. Required reviewers on the `staging`/`production` environments must be configured in repository settings. |
+| Black-box startup migrations | **Not tested** | App not supplied. Only the standalone SQL expand/contract demo ran. |
+| Cloud dedicated-tenant onboarding < 30 min | **Estimated (20–25 min), not measured** | Only the Kubernetes layer was measured (16 s). |
+| Video recording | **Terminal recordings only** | `recordings/*.typescript` + `.timing`, replayable with `scriptreplay`. No screen video was made (user's choice). |
+| Redis / PostgreSQL HA locally | **No** | Single instances. Redis now has an AOF PVC, but there's no failover. |
+
+## Failed or partial attempts (kept as evidence)
+| Evidence | What happened | Resolution |
+|---|---|---|
+| `evidence/raw/zero-downtime-traffic.txt` (3 Nov) | **50/120 requests failed** (HTTP 000 from 18:26:37) during an earlier rollout, measured through a host `kubectl port-forward` | Most likely the port-forward stayed attached to a terminated pod. That's unproven, so it isn't claimed either way. The new tests generate load in-cluster through the Service instead. |
+| `baseline-upgrade-attempt1-FAILED.txt` | Helm upgrade to chart 0.2.0 failed (server-side apply conflicts: leftover Redis `rollingUpdate`, HPA fields owned by kubectl), and the automatic rollback also timed out (revisions 18–19 failed) | API stayed 2/2 available throughout. Fixed with a one-off strategy patch and `--force-conflicts` (attempt 2, revision 20). |
+| `deploy-under-load-attempt1-gate-bug/` | Gate computed a negative request delta when the HPA scaled 2→5 pods, failed safe and rolled back | Gate changed to per-pod deltas. Clients still saw 0 of 22,501 requests fail through the rollout and rollback. |
+| `deploy-under-load-attempt2-load-ended-early/` | Load (150 s) ended before analysis step 4, so the result was inconclusive and the gate rolled back | Load lengthened to 240 s. Again 0 of 22,501 failed. |
+| `isolation-residency-attempt1-invalid-control/` | My positive control was wrong: the probe pod lacked the release label, so "blocked" was the correct result | Added real positive controls; rerun 9/9. |
+| `keda-install/run.txt` | First KEDA install timed out (4-minute image pull) | Retried; revision 2 deployed. |
+| `keda-install/enable-worker-scaledobject.txt` attempt 1 | ScaledObject used a short Redis Service name that KEDA (in namespace `keda`) couldn't resolve, so Helm rolled back automatically | Chart now defaults to the FQDN. |
+| `rollback-bad-release-metrics/` | **Expected**: 2,649/20,000 (13.2%) requests failed while the bad release was live (~87 s) | This is the measured blast radius of a rolling release. It's the reason for the canary design. |
+
+## Interpretation limits
+- **"Deploy under load with no errors"** means 0 failed out of 36,001 in-cluster requests at 150 rps during one digest rollout on one node. It doesn't prove zero downtime under production conditions (LB draining, multi-node, real app).
+- **Backup/restore** used a 2-row demo database. It proves the procedure and verification, not the RTO at size.
+- **Worker drain** verified one job interrupted mid-flight, plus one job after SIGTERM. Exactly-once is not claimed: delivery is at-least-once with an idempotency marker.
+- **`terraform test`** uses a mocked AWS provider. Values such as the EKS version (1.35), Valkey 8.0 and the CA identifier weren't verified against live AWS APIs.
+- **Cost figures** are list-price estimates, not calculator exports or billing data.

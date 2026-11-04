@@ -1,0 +1,50 @@
+Script started on 2026-11-04 11:23:38+05:30 [COMMAND="scripts/test-deploy-under-load.sh rollback-bad-release-metrics PROFILE=constant RATE=100 DURATION=200s JOB_EVERY=0 MAX_FAIL_RATE=1 -- -f deploy/environments/local.yaml --set api.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set worker.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set api.appVersion=v5-bad --set-json 'api.extraEnv=[{"name":"FAULT_ERROR_RATE","value":"0.3"}]'" <not executed on terminal>]
+== rollback-bad-release-metrics started 2026-11-04 11:23:38 IST
+k6 env: PROFILE=constant RATE=100 DURATION=200s JOB_EVERY=0 MAX_FAIL_RATE=1
+rollout args: -f deploy/environments/local.yaml --set api.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set worker.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set api.appVersion=v5-bad --set-json api.extraEnv=[{"name":"FAULT_ERROR_RATE","value":"0.3"}]
+memory before:
+               total        used        free      shared  buff/cache   available
+Mem:           6.9Gi       4.5Gi       572Mi       717Mi       2.9Gi       2.4Gi
+Swap:          4.0Gi       3.9Gi        86Mi
+24      	Wed Nov  4 11:18:14 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+25      	Wed Nov  4 11:19:47 2026	deployed  	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+== rollout starting 11:24:03
+[2026-11-04 11:24:03] Current deployed revision: 25
+[2026-11-04 11:24:03] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:24:03 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 26
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:25:00] Gate 1 passed: revision 26 rolled out and Ready.
+[2026-11-04 11:25:31] Analysis step 1/4: FAIL pods=5 requests=2066 errors=666 error_rate=0.3224 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:25:31] GATE 2 FAILED: rolling back revision 26 -> 25
+Rollback was a success! Happy Helming!
+[2026-11-04 11:26:27] Rollback complete.
+25      	Wed Nov  4 11:19:47 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+26      	Wed Nov  4 11:24:03 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+27      	Wed Nov  4 11:25:31 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 25                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+== rollout finished 11:26:27 exit=1
+== k6 summary:
+{"profile":"constant","requests":20000,"rps_avg":100,"failed_rate":0.13245,"failed_count":2649,"p95_ms":2.87,"p99_ms":null,"max_ms":60.66,"dropped_iterations":0,"thresholds_ok":true}
+== k6 checks:
+K6_SUMMARY_JSON {"profile":"constant","requests":20000,"rps_avg":100,"failed_rate":0.13245,"failed_count":2649,"p95_ms":2.87,"p99_ms":null,"max_ms":60.66,"dropped_iterations":0,"thresholds_ok":true}
+load ✓ [ 100% ] 000/030 VUs  3m20s  100.00 iters/s
+== min ready endpoints during test: 5
+25      	Wed Nov  4 11:19:47 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+26      	Wed Nov  4 11:24:03 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+27      	Wed Nov  4 11:25:31 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 25                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+NAME                     IMAGE                                                                                                             READY
+devops-platform-api      localhost:5001/cloud-platform-reference@sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70   5
+devops-platform-redis    redis:7-alpine                                                                                                    1
+devops-platform-worker   localhost:5001/cloud-platform-reference@sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70   1
+migration-postgres       postgres:16-alpine                                                                                                1
+memory after:
+Mem:           6.9Gi       4.5Gi       533Mi       706Mi       2.9Gi       2.4Gi
+Swap:          4.0Gi       3.9Gi        92Mi
+== rollback-bad-release-metrics finished 2026-11-04 11:27:03 IST
+
+Script done on 2026-11-04 11:27:03+05:30 [COMMAND_EXIT_CODE="1"]

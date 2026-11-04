@@ -1,0 +1,47 @@
+Script started on 2026-11-04 11:34:39+05:30 [COMMAND="scripts/test-isolation-residency.sh" <not executed on terminal>]
+== isolation/residency test started 2026-11-04 11:34:39 IST
+
+--- 1. Policy gate: EU tenant declaring a US region must be rejected
+== onboarding zz-test-eu-in-us started 2026-11-04 11:34:39 IST
+namespace=tenant-zz-test-eu-in-us release=tenant-zz-test-eu-in-us mode=dedicated residency=eu region=us-east-1
+POLICY FAIL: residency eu does not allow region us-east-1
+PASS: onboarding refused EU tenant in us-east-1
+PASS: no namespace/resources created for rejected tenant
+
+--- 2. Scheduler guard: pod restricted to EU regions on a node without an EU region label
+NAME                              STATUS   ROLES           AGE   VERSION   REGION
+devops-assignment-control-plane   Ready    control-plane   19h   v1.37.0   
+pod/residency-probe created
+pod phase=Pending event: 0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+PASS: scheduler refused to place EU-pinned pod on non-EU node
+pod "residency-probe" deleted from tenant-acme-eu namespace
+
+--- 3. Network isolation (NetworkPolicy enforced by kindnet)
+acme (unlabelled pod) -> own api: connected
+PASS: control: same-namespace client reaches tenant API
+acme (release pod) -> own redis: connected
+PASS: control: release pod reaches its own Redis
+acme (non-release pod) -> own redis: blocked
+PASS: non-release pod in same namespace blocked from Redis
+acme (pod spoofing shared release label) -> shared redis: blocked
+PASS: tenant blocked from shared stack Redis
+acme -> globex api: blocked
+PASS: tenant blocked from another tenant's API
+acme -> globex redis: blocked
+PASS: tenant blocked from another tenant's Redis
+
+--- 4. Per-tenant labels (visibility) on running pods
+devops-platform devops-platform-api-5dd7f59467-cjxwj shared shared eu
+devops-platform devops-platform-api-5dd7f59467-d22hr shared shared eu
+devops-platform devops-platform-redis-86bb976684-47kxf shared shared eu
+devops-platform devops-platform-worker-84d494c566-gnwdk shared shared eu
+tenant-acme-eu tenant-acme-eu-api-669775c8bb-cwkcq acme-eu dedicated eu
+tenant-acme-eu tenant-acme-eu-redis-5b7494bf8f-7rhdn acme-eu dedicated eu
+tenant-acme-eu tenant-acme-eu-worker-7746f5c567-kqr6w acme-eu dedicated eu
+tenant-globex-eu tenant-globex-eu-api-6dbbc89f49-bc9qt globex-eu dedicated eu
+tenant-globex-eu tenant-globex-eu-redis-57b9d46d95-ljhg5 globex-eu dedicated eu
+tenant-globex-eu tenant-globex-eu-worker-74bb6c697-pm4qw globex-eu dedicated eu
+
+== RESULT: 9 passed, 0 failed  (2026-11-04 11:35:16 IST)
+
+Script done on 2026-11-04 11:35:16+05:30 [COMMAND_EXIT_CODE="0"]

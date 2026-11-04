@@ -1,0 +1,48 @@
+Script started on 2026-11-04 11:19:21+05:30 [COMMAND="scripts/test-deploy-under-load.sh deploy-under-load PROFILE=constant RATE=150 DURATION=240s JOB_EVERY=150 MAX_FAIL_RATE=0 -- -f deploy/environments/local.yaml --set api.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set worker.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set api.appVersion=v5" <not executed on terminal>]
+== deploy-under-load started 2026-11-04 11:19:21 IST
+k6 env: PROFILE=constant RATE=150 DURATION=240s JOB_EVERY=150 MAX_FAIL_RATE=0
+rollout args: -f deploy/environments/local.yaml --set api.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set worker.image.digest=sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70 --set api.appVersion=v5
+memory before:
+               total        used        free      shared  buff/cache   available
+Mem:           6.9Gi       4.5Gi       656Mi       716Mi       2.8Gi       2.4Gi
+Swap:          4.0Gi       3.9Gi        61Mi
+23      	Wed Nov  4 11:15:38 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+24      	Wed Nov  4 11:18:14 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+== rollout starting 11:19:46
+[2026-11-04 11:19:46] Current deployed revision: 24
+[2026-11-04 11:19:46] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:19:47 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 25
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:20:43] Gate 1 passed: revision 25 rolled out and Ready.
+[2026-11-04 11:21:15] Analysis step 1/4: PASS pods=5 requests=3275 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:21:38] Analysis step 2/4: PASS pods=5 requests=3459 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:01] Analysis step 3/4: PASS pods=5 requests=3434 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:24] Analysis step 4/4: PASS pods=5 requests=3463 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:24] ALL GATES PASSED: revision 25 promoted.
+== rollout finished 11:22:24 exit=0
+== k6 summary:
+{"profile":"constant","requests":36001,"rps_avg":150,"failed_rate":0,"failed_count":0,"p95_ms":2.91,"p99_ms":null,"max_ms":59.75,"dropped_iterations":0,"thresholds_ok":true}
+== k6 checks:
+K6_SUMMARY_JSON {"profile":"constant","requests":36001,"rps_avg":150,"failed_rate":0,"failed_count":0,"p95_ms":2.91,"p99_ms":null,"max_ms":59.75,"dropped_iterations":0,"thresholds_ok":true}
+load ✓ [ 100% ] 000/030 VUs  4m0s  150.00 iters/s
+== min ready endpoints during test: 5
+23      	Wed Nov  4 11:15:38 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+24      	Wed Nov  4 11:18:14 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+25      	Wed Nov  4 11:19:47 2026	deployed  	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+NAME                     IMAGE                                                                                                             READY
+devops-platform-api      localhost:5001/cloud-platform-reference@sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70   5
+devops-platform-redis    redis:7-alpine                                                                                                    1
+devops-platform-worker   localhost:5001/cloud-platform-reference@sha256:8624d83d856534de936081822c9f01a290aa127ed3ffb2c1724ea70f29deaa70   1
+migration-postgres       postgres:16-alpine                                                                                                1
+memory after:
+Mem:           6.9Gi       4.5Gi       590Mi       703Mi       2.9Gi       2.4Gi
+Swap:          4.0Gi       3.9Gi        85Mi
+== deploy-under-load finished 2026-11-04 11:23:26 IST
+
+Script done on 2026-11-04 11:23:26+05:30 [COMMAND_EXIT_CODE="0"]

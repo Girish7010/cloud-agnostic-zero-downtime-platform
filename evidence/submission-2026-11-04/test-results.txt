@@ -1,0 +1,41 @@
+# Unit tests 2026-11-04 12:07:02 IST
+$ .venv/bin/python -m pytest -v
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- /home/neo/Desktop/Task/.venv/bin/python
+rootdir: /home/neo/Desktop/Task
+configfile: pytest.ini
+testpaths: tests/unit
+plugins: anyio-4.16.0
+collecting ... collected 14 items
+
+tests/unit/test_api.py::test_healthz PASSED                              [  7%]
+tests/unit/test_api.py::test_readyz_ready_when_redis_up PASSED           [ 14%]
+tests/unit/test_api.py::test_readyz_503_when_redis_down PASSED           [ 21%]
+tests/unit/test_api.py::test_submit_job_enqueues_to_stream PASSED        [ 28%]
+tests/unit/test_api.py::test_submit_job_validation[body0] PASSED         [ 35%]
+tests/unit/test_api.py::test_submit_job_validation[body1] PASSED         [ 42%]
+tests/unit/test_api.py::test_metrics_exposes_request_counter PASSED      [ 50%]
+tests/unit/test_api.py::test_fault_injection_spares_probes PASSED        [ 57%]
+tests/unit/test_worker.py::test_processes_and_acks PASSED                [ 64%]
+tests/unit/test_worker.py::test_failed_job_stays_pending PASSED          [ 71%]
+tests/unit/test_worker.py::test_redelivered_completed_job_is_not_rerun PASSED [ 78%]
+tests/unit/test_worker.py::test_no_new_job_started_after_sigterm PASSED  [ 85%]
+tests/unit/test_worker.py::test_sigterm_during_job_still_acks PASSED     [ 92%]
+tests/unit/test_worker.py::test_stale_pending_message_is_reclaimed PASSED [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/neo/Desktop/Task/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 14 passed, 1 warning in 0.88s =========================
+
+$ python -m compileall -q app
+OK
+
+$ shellcheck -S warning scripts/*.sh   (koalaman/shellcheck:stable container)
+shellcheck: no findings
+
+$ actionlint   (rhysd/actionlint container)
+actionlint: no findings

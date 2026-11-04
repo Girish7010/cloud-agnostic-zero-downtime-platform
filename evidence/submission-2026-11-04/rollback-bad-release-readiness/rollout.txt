@@ -1,0 +1,9 @@
+[2026-11-04 11:27:40] Current deployed revision: 27
+[2026-11-04 11:27:40] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 90s
+level=WARN msg="upgrade failed" name=devops-platform error="resource Deployment/devops-platform/devops-platform-api not ready. status: InProgress, message: Updated: 1/5\ncontext deadline exceeded"
+Error: UPGRADE FAILED: release devops-platform failed, and has been rolled back due to rollback-on-failure being set: resource Deployment/devops-platform/devops-platform-api not ready. status: InProgress, message: Updated: 1/5
+context deadline exceeded
+[2026-11-04 11:29:12] GATE 1 FAILED: new pods never became Ready; Helm rolled back automatically.
+27      	Wed Nov  4 11:25:31 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 25                                                                                                                                
+28      	Wed Nov  4 11:27:40 2026	failed    	platform-app-0.2.0	reference-harness     	Upgrade "devops-platform" failed: resource Deployment/devops-platform/devops-platform-api not ready. status: InProgress, message: Updated: ...
+29      	Wed Nov  4 11:29:11 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 27                                                                                                                                

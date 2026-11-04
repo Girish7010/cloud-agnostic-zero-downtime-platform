@@ -1,0 +1,1 @@
+{"profile":"constant","requests":22501,"rps_avg":150,"failed_rate":0,"failed_count":0,"p95_ms":5.38,"p99_ms":null,"max_ms":67.98,"dropped_iterations":0,"thresholds_ok":true}

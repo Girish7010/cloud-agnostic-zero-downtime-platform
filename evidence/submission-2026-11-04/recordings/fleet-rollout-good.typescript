@@ -1,0 +1,60 @@
+Script started on 2026-11-04 11:35:32+05:30 [COMMAND="scripts/fleet-rollout.sh --set api.image.digest=sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df --set worker.image.digest=sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df --set api.appVersion=v6" <not executed on terminal>]
+== fleet rollout started 2026-11-04 11:35:33 IST; order: 0 shared 1 acme-eu 2 globex-eu
+
+===== ring 0 tenant shared (devops-platform/devops-platform) 11:35:33
+[2026-11-04 11:35:43] Current deployed revision: 29
+[2026-11-04 11:35:43] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:35:43 2026
+NAMESPACE: [36mdevops-platform[0m
+STATUS: [32mdeployed[0m
+REVISION: 30
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:36:06] Gate 1 passed: revision 30 rolled out and Ready.
+[2026-11-04 11:36:28] Analysis step 1/2: PASS pods=2 requests=387 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:36:46] Analysis step 2/2: PASS pods=2 requests=541 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:36:46] ALL GATES PASSED: revision 30 promoted.
+ring 0 tenant shared: PASSED
+
+===== ring 1 tenant acme-eu (tenant-acme-eu/tenant-acme-eu) 11:36:46
+[33;1mWarning:[0m would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "k6" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "k6" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "k6" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "k6" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+[2026-11-04 11:36:56] Current deployed revision: 1
+[2026-11-04 11:36:56] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+I1104 11:36:57.678925  126753 warnings.go:107] "Warning: would violate PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false (container \"redis\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"redis\" must set securityContext.capabilities.drop=[\"ALL\"]), runAsNonRoot != true (pod or container \"redis\" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container \"redis\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")"
+Release "tenant-acme-eu" has been upgraded. Happy Helming!
+NAME: tenant-acme-eu
+LAST DEPLOYED: Wed Nov  4 11:36:56 2026
+NAMESPACE: [36mtenant-acme-eu[0m
+STATUS: [32mdeployed[0m
+REVISION: 2
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:37:11] Gate 1 passed: revision 2 rolled out and Ready.
+[2026-11-04 11:37:34] Analysis step 1/2: PASS pods=1 requests=379 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:37:55] Analysis step 2/2: PASS pods=2 requests=642 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:37:55] ALL GATES PASSED: revision 2 promoted.
+ring 1 tenant acme-eu: PASSED
+
+===== ring 2 tenant globex-eu (tenant-globex-eu/tenant-globex-eu) 11:37:55
+[33;1mWarning:[0m would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "k6" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "k6" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "k6" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "k6" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+[2026-11-04 11:38:05] Current deployed revision: 1
+[2026-11-04 11:38:05] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+I1104 11:38:06.710150  129977 warnings.go:107] "Warning: would violate PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false (container \"redis\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"redis\" must set securityContext.capabilities.drop=[\"ALL\"]), runAsNonRoot != true (pod or container \"redis\" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container \"redis\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")"
+Release "tenant-globex-eu" has been upgraded. Happy Helming!
+NAME: tenant-globex-eu
+LAST DEPLOYED: Wed Nov  4 11:38:05 2026
+NAMESPACE: [36mtenant-globex-eu[0m
+STATUS: [32mdeployed[0m
+REVISION: 2
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:38:20] Gate 1 passed: revision 2 rolled out and Ready.
+[2026-11-04 11:38:42] Analysis step 1/2: PASS pods=1 requests=371 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:39:02] Analysis step 2/2: PASS pods=2 requests=597 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:39:02] ALL GATES PASSED: revision 2 promoted.
+ring 2 tenant globex-eu: PASSED
+== fleet rollout COMPLETED 2026-11-04 11:39:02 IST
+
+Script done on 2026-11-04 11:39:02+05:30 [COMMAND_EXIT_CODE="0"]

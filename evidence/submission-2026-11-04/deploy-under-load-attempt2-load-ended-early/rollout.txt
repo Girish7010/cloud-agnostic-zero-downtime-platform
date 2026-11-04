@@ -1,0 +1,21 @@
+[2026-11-04 11:15:38] Current deployed revision: 22
+[2026-11-04 11:15:38] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:15:38 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 23
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:16:35] Gate 1 passed: revision 23 rolled out and Ready.
+[2026-11-04 11:17:07] Analysis step 1/4: PASS pods=5 requests=3324 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:17:31] Analysis step 2/4: PASS pods=5 requests=3477 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:17:53] Analysis step 3/4: PASS pods=5 requests=2625 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:18:14] Analysis step 4/4: FAIL inconclusive: only 0 requests (< 50) across 5 pods
+[2026-11-04 11:18:14] GATE 2 FAILED: rolling back revision 23 -> 22
+Rollback was a success! Happy Helming!
+[2026-11-04 11:19:10] Rollback complete.
+22      	Wed Nov  4 11:13:24 2026	superseded	platform-app-0.2.0	reference-harness     	Rollback to 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+23      	Wed Nov  4 11:15:38 2026	superseded	platform-app-0.2.0	reference-harness     	Upgrade complete                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+24      	Wed Nov  4 11:18:14 2026	deployed  	platform-app-0.2.0	reference-harness     	Rollback to 22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

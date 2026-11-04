@@ -1,0 +1,49 @@
+Script started on 2026-11-04 11:32:56+05:30 [COMMAND="scripts/onboard-tenant.sh acme-eu && scripts/onboard-tenant.sh globex-eu" <not executed on terminal>]
+== onboarding acme-eu started 2026-11-04 11:32:56 IST
+namespace=tenant-acme-eu release=tenant-acme-eu mode=dedicated residency=eu region=eu-west-1
+POLICY PASS: residency eu allows region eu-west-1
+namespace/tenant-acme-eu created
+resourcequota/tenant-quota created
+limitrange/tenant-defaults created
+Release "tenant-acme-eu" does not exist. Installing it now.
+I1104 11:32:57.273303  113767 warnings.go:107] "Warning: would violate PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false (container \"redis\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"redis\" must set securityContext.capabilities.drop=[\"ALL\"]), runAsNonRoot != true (pod or container \"redis\" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container \"redis\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")"
+NAME: tenant-acme-eu
+LAST DEPLOYED: Wed Nov  4 11:32:56 2026
+NAMESPACE: [36mtenant-acme-eu[0m
+STATUS: [32mdeployed[0m
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+/healthz {"status":"healthy"}
+/readyz {"status":"ready","redis":"connected"}
+/version {"version":"v4"}
+NAME                                     READY   STATUS    RESTARTS   AGE   TENANT    DATA-RESIDENCY
+tenant-acme-eu-api-669775c8bb-cwkcq      1/1     Running   0          15s   acme-eu   eu
+tenant-acme-eu-redis-5b7494bf8f-7rhdn    1/1     Running   0          15s   acme-eu   eu
+tenant-acme-eu-worker-7746f5c567-kqr6w   1/1     Running   0          15s   acme-eu   eu
+== onboarding acme-eu finished 2026-11-04 11:33:12 IST elapsed=16s
+== onboarding globex-eu started 2026-11-04 11:33:12 IST
+namespace=tenant-globex-eu release=tenant-globex-eu mode=dedicated residency=eu region=eu-central-1
+POLICY PASS: residency eu allows region eu-central-1
+namespace/tenant-globex-eu created
+resourcequota/tenant-quota created
+limitrange/tenant-defaults created
+Release "tenant-globex-eu" does not exist. Installing it now.
+I1104 11:33:13.243382  114868 warnings.go:107] "Warning: would violate PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false (container \"redis\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"redis\" must set securityContext.capabilities.drop=[\"ALL\"]), runAsNonRoot != true (pod or container \"redis\" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container \"redis\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")"
+NAME: tenant-globex-eu
+LAST DEPLOYED: Wed Nov  4 11:33:12 2026
+NAMESPACE: [36mtenant-globex-eu[0m
+STATUS: [32mdeployed[0m
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+/healthz {"status":"healthy"}
+/readyz {"status":"ready","redis":"connected"}
+/version {"version":"v4"}
+NAME                                      READY   STATUS    RESTARTS   AGE   TENANT      DATA-RESIDENCY
+tenant-globex-eu-api-6dbbc89f49-bc9qt     1/1     Running   0          15s   globex-eu   eu
+tenant-globex-eu-redis-57b9d46d95-ljhg5   1/1     Running   0          15s   globex-eu   eu
+tenant-globex-eu-worker-74bb6c697-pm4qw   1/1     Running   0          15s   globex-eu   eu
+== onboarding globex-eu finished 2026-11-04 11:33:28 IST elapsed=16s
+
+Script done on 2026-11-04 11:33:28+05:30 [COMMAND_EXIT_CODE="0"]

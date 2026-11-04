@@ -1,0 +1,56 @@
+# Baseline upgrade to chart platform-app 0.2.0 + v4 image by digest
+Started: 2026-11-04 11:05:30 IST
+$ kubectl -n devops-platform annotate/label hpa devops-platform-api (adopt kubectl-applied HPA into Helm)
+horizontalpodautoscaler.autoscaling/devops-platform-api annotated
+horizontalpodautoscaler.autoscaling/devops-platform-api labeled
+$ helm template ... | kubectl apply --dry-run=server -f -
+networkpolicy.networking.k8s.io/devops-platform-api created (server dry run)
+networkpolicy.networking.k8s.io/devops-platform-worker created (server dry run)
+networkpolicy.networking.k8s.io/devops-platform-redis created (server dry run)
+Warning: resource poddisruptionbudgets/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+poddisruptionbudget.policy/devops-platform-api configured (server dry run)
+poddisruptionbudget.policy/devops-platform-worker created (server dry run)
+serviceaccount/devops-platform-app created (server dry run)
+persistentvolumeclaim/devops-platform-redis-data created (server dry run)
+Warning: resource services/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+service/devops-platform-api configured (server dry run)
+Warning: resource services/devops-platform-redis is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+service/devops-platform-redis configured (server dry run)
+Warning: resource deployments/devops-platform-api is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-api configured (server dry run)
+Warning: resource deployments/devops-platform-redis is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-redis configured (server dry run)
+Warning: resource deployments/devops-platform-worker is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+deployment.apps/devops-platform-worker configured (server dry run)
+horizontalpodautoscaler.autoscaling/devops-platform-api configured (server dry run)
+$ helm upgrade devops-platform ./deploy/chart -n devops-platform -f deploy/environments/local.yaml --wait --rollback-on-failure --timeout 240s
+level=WARN msg="upgrade failed" name=devops-platform error="server-side apply failed for object devops-platform/devops-platform-redis apps/v1, Kind=Deployment: Deployment.apps \"devops-platform-redis\" is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate' && conflict occurred while applying object devops-platform/devops-platform-api autoscaling/v2, Kind=HorizontalPodAutoscaler: Apply failed with 3 conflicts: conflicts with \"kubectl-client-side-apply\" using autoscaling/v2:\n- .spec.behavior.scaleDown.policies\n- .spec.behavior.scaleDown.stabilizationWindowSeconds\n- .spec.behavior.scaleUp.policies"
+Error: UPGRADE FAILED: an error occurred while rolling back the release. original upgrade error: server-side apply failed for object devops-platform/devops-platform-redis apps/v1, Kind=Deployment: Deployment.apps "devops-platform-redis" is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate' && conflict occurred while applying object devops-platform/devops-platform-api autoscaling/v2, Kind=HorizontalPodAutoscaler: Apply failed with 3 conflicts: conflicts with "kubectl-client-side-apply" using autoscaling/v2:
+- .spec.behavior.scaleDown.policies
+- .spec.behavior.scaleDown.stabilizationWindowSeconds
+- .spec.behavior.scaleUp.policies: release devops-platform failed: resource Deployment/devops-platform/devops-platform-api not ready. status: InProgress, message: Updated: 1/2
+context deadline exceeded
+exit=1
+18      	Wed Nov  4 11:05:31 2026	failed    	platform-app-0.2.0	reference-harness     	Upgrade "devops-platform" failed: server-side apply failed for object devops-platform/devops-platform-redis apps/v1, Kind=Deployment: Deployment.apps "devops-platform-redis" is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate' && conflict occurred while applying object devops-platform/devops-platform-api autoscaling/v2, Kind=HorizontalPodAutoscaler: Apply failed with 3 conflicts: conflicts with "kubectl-client-side-apply" using autoscaling/...
+19      	Wed Nov  4 11:05:32 2026	failed    	blackbox-app-0.1.0	provided-by-assignment	Release "devops-platform" failed: resource Deployment/devops-platform/devops-platform-api not ready. status: InProgress, message: Updated: 1/2                                                                                                                                                                                                                                                                                                                                                                        
+        	                        	          	                  	                      	context deadline exceeded                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+NAME                                     READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                        SELECTOR
+deployment.apps/devops-platform-api      2/2     1            2           17h   api          cloud-platform-reference:v1   app=devops-platform-api
+deployment.apps/devops-platform-redis    1/1     1            1           17h   redis        redis:7-alpine                app=devops-platform-redis
+deployment.apps/devops-platform-worker   1/1     1            1           17h   worker       cloud-platform-reference:v3   app=devops-platform-worker
+deployment.apps/migration-postgres       1/1     1            1           11h   postgres     postgres:16-alpine            app=migration-postgres
+
+NAME                                             MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/devops-platform-api   1               N/A               1                     17h
+
+NAME                                               STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE    VOLUMEMODE
+persistentvolumeclaim/devops-platform-redis-data   Pending                                      standard       <unset>                 4m1s   Filesystem
+
+NAME                                          READY   STATUS      RESTARTS      AGE    IP            NODE                              NOMINATED NODE   READINESS GATES
+pod/devops-platform-api-5685df4f-st2s9        1/1     Running     0             4m1s   10.244.0.13   devops-assignment-control-plane   <none>           <none>
+pod/devops-platform-api-6f5ff97d5c-88fgq      1/1     Running     1 (31m ago)   11h    10.244.0.10   devops-assignment-control-plane   <none>           <none>
+pod/devops-platform-redis-868b4ccd-q7ppm      1/1     Running     1 (31m ago)   17h    10.244.0.2    devops-assignment-control-plane   <none>           <none>
+pod/devops-platform-worker-5d8d4b7997-cwv9r   1/1     Running     0             4m     10.244.0.14   devops-assignment-control-plane   <none>           <none>
+pod/migration-postgres-7454684d48-vkhq2       1/1     Running     1 (31m ago)   11h    10.244.0.8    devops-assignment-control-plane   <none>           <none>
+pod/traffic-checker                           0/1     Completed   0             16h    <none>        devops-assignment-control-plane   <none>           <none>
+Finished: 2026-11-04 11:09:33 IST

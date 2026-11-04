@@ -1,0 +1,19 @@
+# KEDA install (same chart/version pinned in infra/platform/main.tf) 2026-11-04 11:41:24 IST
+namespace/keda created
+namespace/keda labeled
+NAME                                             READY   STATUS              RESTARTS      AGE
+keda-admission-webhooks-69487b66dc-q67lz         0/1     ContainerCreating   0             5m1s
+keda-operator-559fd6d464-msrml                   1/1     Running             1 (43s ago)   5m1s
+keda-operator-metrics-apiserver-9676b66d-jshcq   0/1     ContainerCreating   0             5m1s
+NAME                              SERVICE                                AVAILABLE                  AGE
+v1beta1.external.metrics.k8s.io   keda/keda-operator-metrics-apiserver   False (MissingEndpoints)   5m1s
+# retry after image-pull timeout 2026-11-04 11:54:03 IST
+STATUS: deployed
+REVISION: 2
+REVISION	UPDATED                 	STATUS    	CHART      	APP VERSION	DESCRIPTION                                                                                                                           
+1       	Wed Nov  4 11:41:25 2026	superseded	keda-2.21.0	2.21.0     	Release "keda" failed: resource Deployment/keda/keda-operator-metrics-apiserver not ready. status: InProgress, message: Available: ...
+2       	Wed Nov  4 11:54:03 2026	deployed  	keda-2.21.0	2.21.0     	Upgrade complete                                                                                                                      
+NAME                                             READY   STATUS    RESTARTS        AGE
+keda-admission-webhooks-69487b66dc-q67lz         1/1     Running   0               12m
+keda-operator-559fd6d464-msrml                   1/1     Running   1 (8m23s ago)   12m
+keda-operator-metrics-apiserver-9676b66d-jshcq   1/1     Running   0               12m

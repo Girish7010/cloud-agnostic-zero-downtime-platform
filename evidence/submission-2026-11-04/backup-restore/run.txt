@@ -1,0 +1,23 @@
+== backup/restore test started 2026-11-04 11:31:32 IST
+postgres (PostgreSQL) 16.15
+== source fingerprint (migration_demo)
+table customers columns=id:bigint:NO,created_at:timestamp with time zone:NO,full_name:character varying:NO
+customers rows=2 md5=f9c4e0a9a926777c3042c42b727ab8c8
+== pg_dump (custom format) inside pod -> local file
+-rw-r--r--    1 root     root          2896 Nov  4 06:01 /tmp/backup-20261104113132.dump
+local copy: backups/migration_demo-20261104113132.dump sha256=78fc3e4f2169f071cf84d512ac3df6fa2d6db5e910c5c94f2ce8718ad6a2e44a (backup files are gitignored)
+216; 1259 16389 TABLE public customers migration_user
+215; 1259 16388 SEQUENCE public customers_id_seq migration_user
+3456; 0 0 SEQUENCE OWNED BY public customers_id_seq migration_user
+3449; 0 16389 TABLE DATA public customers migration_user
+3457; 0 0 SEQUENCE SET public customers_id_seq migration_user
+== restore into NEW database migration_demo_restore_20261104113132
+== restored fingerprint (migration_demo_restore_20261104113132)
+table customers columns=id:bigint:NO,created_at:timestamp with time zone:NO,full_name:character varying:NO
+customers rows=2 md5=f9c4e0a9a926777c3042c42b727ab8c8
+== compare
+RESULT: PASS (schema, row count and content checksum identical)
+Databases now present:
+migration_demo
+migration_demo_restore_20261104113132
+== finished 2026-11-04 11:31:35 IST

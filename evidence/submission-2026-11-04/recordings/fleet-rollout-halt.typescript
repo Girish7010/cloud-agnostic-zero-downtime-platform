@@ -1,0 +1,26 @@
+Script started on 2026-11-04 11:39:18+05:30 [COMMAND="scripts/fleet-rollout.sh --set api.image.digest=sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df --set worker.image.digest=sha256:85c33385967f17b5f91d69741a6973676e82086ace6615f3bd69e52d4b6357df --set api.appVersion=v7-bad --set-json 'api.extraEnv=[{"name":"FAULT_ERROR_RATE","value":"0.3"}]'" <not executed on terminal>]
+== fleet rollout started 2026-11-04 11:39:18 IST; order: 0 shared 1 acme-eu 2 globex-eu
+
+===== ring 0 tenant shared (devops-platform/devops-platform) 11:39:18
+[2026-11-04 11:39:28] Current deployed revision: 30
+[2026-11-04 11:39:28] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:39:28 2026
+NAMESPACE: [36mdevops-platform[0m
+STATUS: [32mdeployed[0m
+REVISION: 31
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:39:51] Gate 1 passed: revision 31 rolled out and Ready.
+[2026-11-04 11:40:14] Analysis step 1/2: FAIL pods=2 requests=412 errors=113 error_rate=0.2743 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:40:14] GATE 2 FAILED: rolling back revision 31 -> 30
+Rollback was a success! Happy Helming!
+[2026-11-04 11:40:37] Rollback complete.
+30      	Wed Nov  4 11:35:43 2026	superseded	platform-app-0.2.0	reference-harness	Upgrade complete                                                                                                                              
+31      	Wed Nov  4 11:39:28 2026	superseded	platform-app-0.2.0	reference-harness	Upgrade complete                                                                                                                              
+32      	Wed Nov  4 11:40:14 2026	deployed  	platform-app-0.2.0	reference-harness	Rollback to 30                                                                                                                                
+ring 0 tenant shared: FAILED -> HALTING FLEET ROLLOUT; remaining rings untouched
+== fleet rollout HALTED 2026-11-04 11:40:37 IST
+
+Script done on 2026-11-04 11:40:37+05:30 [COMMAND_EXIT_CODE="1"]

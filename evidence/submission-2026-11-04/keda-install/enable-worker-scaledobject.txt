@@ -1,0 +1,13 @@
+# enable KEDA worker scaling on shared stack 2026-11-04 11:54:07 IST
+Error: UPGRADE FAILED: release devops-platform failed, and has been rolled back due to rollback-on-failure being set: resource ScaledObject/devops-platform/devops-platform-worker not ready. status: InProgress, message: failed to ensure HPA is correctly created for ScaledObject: connection to redis failed: dial tcp: lookup devops-platform-redis on 10.96.0.10:53: server misbehaving
+NAME                                                      REFERENCE                        TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/devops-platform-api   Deployment/devops-platform-api   cpu: 4%/70%   2         5         2          46m
+# attempt 2 with FQDN redis address 2026-11-04 11:57:24 IST
+STATUS: deployed
+REVISION: 35
+NAME                                          SCALETARGETKIND      SCALETARGETNAME          MIN   MAX   READY   ACTIVE    FALLBACK   PAUSED   TRIGGERS        AUTHENTICATIONS   AGE
+scaledobject.keda.sh/devops-platform-worker   apps/v1.Deployment   devops-platform-worker   1     6     True    Unknown   False      False    redis-streams                     1s
+
+NAME                                                                  REFERENCE                           TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/devops-platform-api               Deployment/devops-platform-api      cpu: 3%/70%   2         5         2          47m
+horizontalpodautoscaler.autoscaling/keda-hpa-devops-platform-worker   Deployment/devops-platform-worker   0/5 (avg)     1         6         1          1s

@@ -1,0 +1,48 @@
+== worker drain test started 2026-11-04 11:30:15 IST job=drain-20261104113015 duration=45s
+terminationGracePeriodSeconds=75
+old worker pod: devops-platform-worker-56b7bbdc5b-7sxtf
+11:30:15 submit: {"status":"accepted","job_id":"drain-20261104113015","message_id":"1793772016840-0"}
+11:30:16 old worker started processing drain-20261104113015
+11:30:21 kubectl rollout restart deploy/devops-platform-worker (old pod will get SIGTERM mid-job)
+deployment.apps/devops-platform-worker restarted
+11:30:23 SIGTERM observed in old worker; submitting second job drain-20261104113015-after-sigterm
+11:30:23 submit: {"status":"accepted","job_id":"drain-20261104113015-after-sigterm","message_id":"1793772024346-0"}
+pod/devops-platform-worker-56b7bbdc5b-7sxtf condition met
+11:31:02 old pod terminated after 41s from restart
+deployment "devops-platform-worker" successfully rolled out
+== old worker log (devops-platform-worker-56b7bbdc5b-7sxtf)
+2026-11-04 06:00:16,841 INFO Processing job_id=drain-20261104113015 message_id=1793772016840-0 duration=45s payload={}
+2026-11-04 06:00:22,861 INFO Shutdown signal received (signal=15). Current job will finish and be acknowledged; no new jobs will be read.
+2026-11-04 06:01:01,842 INFO Completed job_id=drain-20261104113015 message_id=1793772016840-0
+2026-11-04 06:01:01,845 INFO Acknowledged job_id=drain-20261104113015 message_id=1793772016840-0
+2026-11-04 06:01:01,845 INFO Worker shutdown complete. No in-flight job remains.
+2026-11-04 06:01:01,845 INFO Redis connection closed.
+== new worker log (devops-platform-worker-84d494c566-gnwdk, job lines)
+2026-11-04 06:00:25,291 INFO Worker worker-devops-platform-worker-84d494c566-gnwdk started; metrics on :9090
+2026-11-04 06:00:25,296 INFO Processing job_id=drain-20261104113015-after-sigterm message_id=1793772024346-0 duration=2s payload={}
+2026-11-04 06:00:27,296 INFO Completed job_id=drain-20261104113015-after-sigterm message_id=1793772024346-0
+2026-11-04 06:00:27,300 INFO Acknowledged job_id=drain-20261104113015-after-sigterm message_id=1793772024346-0
+== verification
+job1 processed by old=1 new=0 (expect 1/0); acknowledged by old=1 (expect 1)
+job2 seen by old=0 (expect 0); acknowledged by new=1 (expect 1)
+redis done-marker job1: 1  job2: 1
+redis XPENDING summary:
+0
+
+
+
+redis XINFO GROUPS:
+name
+job-workers
+consumers
+7
+pending
+0
+last-delivered-id
+1793772024346-0
+entries-read
+545
+lag
+0
+RESULT: PASS
+== finished 2026-11-04 11:31:12 IST

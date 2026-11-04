@@ -1,0 +1,1 @@
+{"profile":"ramp15x","requests":35099,"rps_avg":97.5,"failed_rate":0,"failed_count":0,"p95_ms":4.03,"p99_ms":null,"max_ms":76.56,"jobs_accepted":1170,"dropped_iterations":0,"thresholds_ok":true}

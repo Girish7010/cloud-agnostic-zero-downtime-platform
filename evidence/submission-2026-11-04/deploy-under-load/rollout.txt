@@ -1,0 +1,16 @@
+[2026-11-04 11:19:46] Current deployed revision: 24
+[2026-11-04 11:19:46] Gate 1 (readiness): helm upgrade --wait --rollback-on-failure --timeout 180s
+Release "devops-platform" has been upgraded. Happy Helming!
+NAME: devops-platform
+LAST DEPLOYED: Wed Nov  4 11:19:47 2026
+NAMESPACE: devops-platform
+STATUS: deployed
+REVISION: 25
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+[2026-11-04 11:20:43] Gate 1 passed: revision 25 rolled out and Ready.
+[2026-11-04 11:21:15] Analysis step 1/4: PASS pods=5 requests=3275 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:21:38] Analysis step 2/4: PASS pods=5 requests=3459 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:01] Analysis step 3/4: PASS pods=5 requests=3434 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:24] Analysis step 4/4: PASS pods=5 requests=3463 errors=0 error_rate=0.0000 (max 0.01) slow_ratio=0.0000 (max 0.05)
+[2026-11-04 11:22:24] ALL GATES PASSED: revision 25 promoted.

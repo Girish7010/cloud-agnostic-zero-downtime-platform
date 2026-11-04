@@ -11,7 +11,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# pip is only needed at build time. It vendors its own msgpack, urllib3 and
+# setuptools (pkg_resources) copies, which Trivy reports as fixable HIGH CVEs,
+# so remove pip and the ensurepip wheel from the runtime image.
+RUN pip install --no-cache-dir -r requirements.txt \
+ && python -m pip uninstall -y pip \
+ && rm -rf /usr/local/lib/python3.13/ensurepip/_bundled
 
 COPY app/ ./app/
 

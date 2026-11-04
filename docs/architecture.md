@@ -4,9 +4,19 @@
 
 > **Scope honesty.** The assignment's black-box application was not supplied, so the platform is exercised with a *reference test harness* (`app/`). It implements only the black-box contract (port 8080, `/healthz` `/readyz` `/metrics`, a Redis-queue worker), and the platform depends on nothing beyond that contract. No cloud resources were provisioned. The AWS IaC validates but has not been applied. Everything runtime-related was proven on a local kind cluster (one node, 6.9 GiB laptop).
 
+**Objectives.** Any cloud from an empty account; one signed artifact promoted by digest dev → staging → production; zero-downtime deploys with automatic rollback; 15x peak (2,250 rps, 20,000 jobs/h) in < 5 min without lost jobs; shared and dedicated tenants from one template, EU data kept in the EU; p95 < 400 ms, 99.9% / 99.95% availability, USD 9,000/month.
+
 ## 1. Architecture
 
-**(a) Delivery: GitHub Actions, OIDC, no stored keys.**
+**(a) Request and data flow per stack.** Prometheus scrapes `/metrics` from API and workers; those series feed the rollout gates, alerts and KEDA.
+
+```mermaid
+flowchart LR
+  C[Clients] --> LB[LB / Service] --> API[API pods :8080, HPA on CPU] -->|XADD job| RS[(Redis stream)] -->|XREADGROUP, XACK| W[Worker pods, KEDA on lag] --> PG[(PostgreSQL)]
+  API --> PG
+```
+
+**(b) Delivery: GitHub Actions, OIDC, no stored keys.**
 
 ```mermaid
 flowchart LR
@@ -14,7 +24,7 @@ flowchart LR
   REG --> D[verify signature → dev] --> ST[staging ✋] --> PRD[production ✋]
 ```
 
-**(b) Runtime targets: the same signed digest and the same chart everywhere.**
+**(c) Runtime targets: the same signed digest and the same chart everywhere.**
 
 ```mermaid
 flowchart TB
@@ -57,16 +67,16 @@ flowchart TB
 Each provider root exports the same **output contract**: `cluster_endpoint`, `postgres_host`, `postgres_secret_ref`, `redis_host`, `secret_store`, `region`, `data_residency`. Anything above the provider layer consumes only that contract. Two targets exist: **local kind** (runtime-tested) and **AWS** (validated, not applied). **Not portable:** VPC/NAT design, IAM/IRSA/Pod Identity, RDS and ElastiCache behaviour (failover, parameters, TLS), load balancer controller and annotations, KMS, Secrets Manager, DNS, node autoscaler, pricing and SLAs. A second cloud means writing a new `modules/<cloud>-stack` that honours the same contract; the platform and application layers don't change.
 
 **Automation from an empty account [IMPLEMENTED]:**
-1. `infra/bootstrap/aws-state` creates the S3 state bucket (versioned, KMS, TLS-only, **S3 native lock files**) and the GitHub OIDC provider with a read-only *plan* role and an *apply* role restricted to the `production` environment.
+1. `infra/bootstrap/aws-state` creates the S3 state bucket (versioned, KMS, TLS-only, **S3 native lock files**) and the GitHub OIDC provider with a read-only *plan* role and an *apply* role whose trust is restricted to the `production` environment (not yet used by any workflow; needs a permissions boundary).
 2. `infra/live/aws/shared-eu` builds the stack.
 3. `infra/platform` installs the add-ons.
 4. Argo CD reconciles `gitops/`.
 
-There are no console steps. Drift detection is a nightly `terraform plan -detailed-exitcode` using the OIDC plan role (`.github/workflows/drift-detection.yml`). Secrets: RDS generates and keeps its master password in Secrets Manager (`manage_master_user_password`); the Redis token is an ephemeral write-only value. External Secrets syncs both into Kubernetes, so nothing reaches Git or Terraform state.
+There are no console steps. Drift detection is a nightly `terraform plan -detailed-exitcode` using the OIDC plan role (`.github/workflows/drift-detection.yml`). Secrets: RDS generates and keeps its master password in Secrets Manager (`manage_master_user_password`); the Redis token is an ephemeral write-only value. External Secrets syncs both into Kubernetes, so neither reaches Git or Terraform state. (Exception: the Grafana admin password, in encrypted `infra/platform` state.)
 
 ## 2. Delivery and deployment
 
-**Pipeline [TESTED in CI: run 41804504092, commit `2eb6bad`, all 5 jobs green]:**
+**Pipeline [TESTED in CI: final run 41810479665, commit `9d747ff`, all 5 jobs green; first green run 41804504092]:**
 1. **verify:** pytest (14 tests), shellcheck, Helm render of every tenant, and `terraform validate` for every root.
 2. **build:** exactly one `docker build` → push to GHCR → Trivy (fails on fixable HIGH/CRITICAL) → CycloneDX SBOM → `cosign sign` + `cosign attest` (keyless, GitHub OIDC).
 3. **promote ×3** (`promote.yml`): `cosign verify` and `verify-attestation` against this repository's workflow identity, then move `:dev`, `:staging` and `:production` to **the same digest** with `imagetools create`. The job asserts that the promoted digest equals the built one.

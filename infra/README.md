@@ -117,8 +117,12 @@ Local equivalent: `providers/local` apply, then `platform` with
   `terraform plan -detailed-exitcode -lock-timeout=5m`. Exit code `0` = no
   drift, `2` = drift (job fails / opens an issue), `1` = error. The plan role
   can read everything but write only `*.tflock` objects, so drift detection
-  can never change infrastructure. Applies only run in the `production`
-  GitHub environment with the apply role, after review.
+  can never change infrastructure. It can also read the `<stack>/redis-auth`
+  secret (needed to refresh it), and its trust includes `pull_request`, which
+  no workflow uses yet; narrow the trust to `main` before wiring up a PR plan
+  job. The apply role's trust allows only the `production` GitHub environment,
+  but no workflow assumes it yet (nothing has been applied), and its IAM
+  permissions need a permissions boundary first (see `github-oidc.tf`).
 
 ## Secrets
 

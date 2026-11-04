@@ -1,0 +1,49 @@
+# [DESIGN — not installed on the laptop cluster] One Argo CD Application per
+# tenant file. Adding gitops/tenants/<id>/values.yaml in a reviewed PR is the
+# whole onboarding change. Rings are honoured by the progressive sync
+# strategy below (shared first, then ring 1, then ring 2); a failed/degraded
+# ring stops the rollout.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform.git
+        revision: main
+        files:
+          - path: gitops/tenants/*/values.yaml
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions: [{ key: ring, operator: In, values: ["0"] }]
+        - matchExpressions: [{ key: ring, operator: In, values: ["1"] }]
+        - matchExpressions: [{ key: ring, operator: In, values: ["2"] }]
+  template:
+    metadata:
+      name: "{{ .tenant.id }}"
+      labels:
+        ring: "{{ .platform.ring }}"
+        platform.io/tenant: "{{ .tenant.id }}"
+    spec:
+      project: tenants
+      source:
+        repoURL: https://github.com/Girish7010/cloud-agnostic-zero-downtime-platform.git
+        targetRevision: main
+        path: deploy/chart
+        helm:
+          valueFiles:
+            - ../environments/production.yaml          # promoted digest lives here
+            - "../../gitops/tenants/{{ .tenant.id }}/values.yaml"
+      destination:
+        # Dedicated tenants point at their own cluster (registered from the
+        # provider layer's cluster_endpoint output).
+        name: "{{ if eq .tenant.mode \"dedicated\" }}{{ .tenant.id }}{{ else }}in-cluster{{ end }}"
+        namespace: "{{ .platform.namespace }}"
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true, ServerSideApply=true]

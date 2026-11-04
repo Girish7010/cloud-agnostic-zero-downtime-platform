@@ -1,0 +1,25 @@
+# Dedicated EU tenant (ring 1). Adding a directory like this one is the single
+# reviewed change that onboards a tenant (scripts/onboard-tenant.sh locally,
+# Argo CD ApplicationSet in the cloud design).
+platform:
+  namespace: tenant-acme-eu
+  release: tenant-acme-eu
+  ring: 1
+tenant:
+  id: acme-eu
+  mode: dedicated
+  residency: eu
+  region: eu-west-1
+api:
+  replicas: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { cpu: 300m, memory: 256Mi }
+worker:
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { cpu: 300m, memory: 256Mi }

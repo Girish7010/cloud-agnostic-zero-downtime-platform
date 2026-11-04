@@ -1,0 +1,10 @@
+# Shared multi-tenant stack (ring 0). Local: release devops-platform in namespace devops-platform.
+platform:
+  namespace: devops-platform
+  release: devops-platform
+  ring: 0
+tenant:
+  id: shared
+  mode: shared
+  residency: eu
+  region: eu-central-1

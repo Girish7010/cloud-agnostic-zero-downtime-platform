@@ -1,0 +1,13 @@
+# Fleet rollout order. A release moves ring by ring; any failed gate halts the
+# fleet and later rings keep their current version.
+#   ring 0: shared stack (largest blast radius but most traffic -> best signal)
+#   ring 1: first dedicated tenants (canary tenants)
+#   ring 2: remaining dedicated tenants
+#   ring 3+: next region (e.g. US stack from the change request) — not deployed
+rings:
+  - ring: 0
+    tenants: [shared]
+  - ring: 1
+    tenants: [acme-eu]
+  - ring: 2
+    tenants: [globex-eu]

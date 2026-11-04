@@ -1,0 +1,84 @@
+# [IMPLEMENTED as config, NOT deployed — kube-prometheus-stack is not running
+# on the laptop]. SLO burn-rate alerts (multi-window, Google SRE workbook) and
+# operational alerts. Every series carries platform.io/tenant via pod labels
+# (relabelled to `tenant`), so alerts and dashboards are per tenant.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: platform-slo
+  namespace: monitoring
+spec:
+  groups:
+    - name: sli
+      rules:
+        - record: tenant:api_error_ratio:rate5m
+          expr: |
+            sum by (tenant) (rate(http_requests_total{status=~"5..",path!~"/healthz|/readyz|/metrics"}[5m]))
+            / sum by (tenant) (rate(http_requests_total{path!~"/healthz|/readyz|/metrics"}[5m]))
+        - record: tenant:api_error_ratio:rate1h
+          expr: |
+            sum by (tenant) (rate(http_requests_total{status=~"5..",path!~"/healthz|/readyz|/metrics"}[1h]))
+            / sum by (tenant) (rate(http_requests_total{path!~"/healthz|/readyz|/metrics"}[1h]))
+        - record: tenant:api_error_ratio:rate6h
+          expr: |
+            sum by (tenant) (rate(http_requests_total{status=~"5..",path!~"/healthz|/readyz|/metrics"}[6h]))
+            / sum by (tenant) (rate(http_requests_total{path!~"/healthz|/readyz|/metrics"}[6h]))
+        - record: tenant:api_latency_p95:5m
+          expr: histogram_quantile(0.95, sum by (tenant, le) (rate(http_request_duration_seconds_bucket{path!~"/healthz|/readyz|/metrics"}[5m])))
+    - name: slo-burn
+      rules:
+        # Error budget: shared 99.9% (0.001), dedicated 99.95% (0.0005).
+        - alert: SLOFastBurn
+          expr: |
+            (tenant:api_error_ratio:rate1h > 14.4 * on(tenant) group_left tenant:slo_error_budget
+             and tenant:api_error_ratio:rate5m > 14.4 * on(tenant) group_left tenant:slo_error_budget)
+          for: 2m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.tenant }} burning error budget 14.4x (2% of monthly budget per hour)"
+            runbook: docs/runbooks/api-outage.md
+        - alert: SLOSlowBurn
+          expr: tenant:api_error_ratio:rate6h > 6 * on(tenant) group_left tenant:slo_error_budget
+          for: 15m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.tenant }} burning error budget 6x"
+            runbook: docs/runbooks/api-outage.md
+        - alert: APILatencyP95High
+          expr: tenant:api_latency_p95:5m > 0.4
+          for: 10m
+          labels: { severity: ticket }
+          annotations: { summary: "{{ $labels.tenant }} p95 > 400 ms", runbook: docs/runbooks/api-outage.md }
+    - name: operations
+      rules:
+        - alert: QueueBacklogGrowing
+          expr: keda_scaler_metrics_value{scaler=~".*redis-streams.*"} > 500
+          for: 10m
+          labels: { severity: page }
+          annotations: { summary: "Job backlog > 500 for 10m", runbook: docs/runbooks/queue-backlog.md }
+        - alert: WorkerJobFailures
+          expr: sum by (tenant) (rate(worker_jobs_failed_total[10m])) > 0.05
+          for: 10m
+          labels: { severity: ticket }
+          annotations: { summary: "{{ $labels.tenant }} worker failures", runbook: docs/runbooks/queue-backlog.md }
+        - alert: DeploymentReplicasUnavailable
+          expr: kube_deployment_status_replicas_unavailable > 0
+          for: 10m
+          labels: { severity: ticket }
+          annotations: { summary: "{{ $labels.namespace }}/{{ $labels.deployment }} unavailable replicas", runbook: docs/runbooks/failed-rollout.md }
+        - alert: PostgresConnectionsHigh
+          expr: aws_rds_database_connections_average / 400 > 0.8
+          for: 10m
+          labels: { severity: page }
+          annotations: { summary: "PostgreSQL connections > 80% of max_connections", runbook: docs/runbooks/database-recovery.md }
+        - alert: BackupTooOld
+          expr: time() - platform_last_successful_restore_test_timestamp_seconds > 8 * 86400
+          labels: { severity: ticket }
+          annotations: { summary: "No successful restore drill in 8 days", runbook: docs/runbooks/database-recovery.md }
+    - name: slo-targets
+      rules:
+        - record: tenant:slo_error_budget
+          expr: |
+            label_replace(vector(0.001), "tenant", "shared", "", "")
+            or label_replace(vector(0.0005), "tenant", "acme-eu", "", "")
+            or label_replace(vector(0.0005), "tenant", "globex-eu", "", "")

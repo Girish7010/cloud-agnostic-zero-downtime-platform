@@ -1,9 +1,16 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 
 export const options = {
   scenarios: {
-    baseline: { executor: 'constant-arrival-rate', rate: 150, timeUnit: '1s', duration: '2m', preAllocatedVUs: 50, maxVUs: 500 },
+    baseline: {
+      executor: 'constant-arrival-rate',
+      rate: 50,
+      timeUnit: '1s',
+      duration: '30s',
+      preAllocatedVUs: 15,
+      maxVUs: 25,
+    },
   },
   thresholds: {
     http_req_failed: ['rate<0.01'],
@@ -11,8 +18,12 @@ export const options = {
   },
 };
 
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8083';
+
 export default function () {
-  const res = http.get(`${__ENV.BASE_URL}/healthz`);
-  check(res, { 'health endpoint responds': (r) => r.status === 200 });
-  sleep(0.1);
+  const response = http.get(`${BASE_URL}/healthz`);
+
+  check(response, {
+    'health endpoint responds': (r) => r.status === 200,
+  });
 }

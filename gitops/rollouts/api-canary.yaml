@@ -1,0 +1,60 @@
+# [DESIGN — not installed locally] Argo Rollouts canary for the API in cloud
+# environments (replaces the Deployment via workloadRef). Locally the same
+# gates are implemented by scripts/gated-rollout.sh (tested).
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: devops-platform-api
+spec:
+  workloadRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: devops-platform-api
+    scaleDown: progressively
+  strategy:
+    canary:
+      canaryService: devops-platform-api-canary
+      stableService: devops-platform-api
+      trafficRouting:
+        # ALB / NGINX / Gateway API — provider-specific choice.
+        plugins: {}
+      analysis:
+        templates: [{ templateName: api-slo-gates }]
+        startingStep: 1
+      steps:
+        - setWeight: 10
+        - pause: { duration: 5m }
+        - setWeight: 25
+        - pause: { duration: 5m }
+        - setWeight: 50
+        - pause: { duration: 5m }
+        - setWeight: 100
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: api-slo-gates
+spec:
+  metrics:
+    - name: error-rate
+      interval: 1m
+      failureLimit: 1
+      successCondition: result[0] <= 0.01
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{app="devops-platform-api",rollouts_pod_template_hash="{{args.canary-hash}}",path!~"/healthz|/readyz|/metrics",status=~"5.."}[2m]))
+            /
+            sum(rate(http_requests_total{app="devops-platform-api",rollouts_pod_template_hash="{{args.canary-hash}}",path!~"/healthz|/readyz|/metrics"}[2m]))
+    - name: p95-latency
+      interval: 1m
+      failureLimit: 1
+      successCondition: result[0] < 0.4
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring:9090
+          query: |
+            histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{app="devops-platform-api",rollouts_pod_template_hash="{{args.canary-hash}}",path!~"/healthz|/readyz|/metrics"}[2m])))
+  args:
+    - name: canary-hash

@@ -128,18 +128,48 @@ jobs:
             echo "ref=${{ steps.ref.outputs.image }}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
           fi
 
+      # Official Trivy container, pinned by index digest. The digest was checked as identical on
+      # docker.io/aquasec/trivy, ghcr.io/aquasecurity/trivy and public.ecr.aws/aquasecurity/trivy
+      # (tag 0.70.0) on 2026-11-04. This replaces aquasecurity/trivy-action, whose nested
+      # setup-trivy installer exited with code 6 before scanning in runs 41787637662 and 41798284612.
+      # Policy unchanged: fixable (ignore-unfixed) CRITICAL/HIGH in os+library packages fail with exit 1.
+      # A scanner/network error fails with exit 2 and a distinct message, never as "clean".
       - name: Vulnerability scan (fail on fixable CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         env:
+          REF: ${{ steps.target.outputs.ref }}
+          TRIVY_IMAGE: aquasec/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cache="$RUNNER_TEMP/trivy-cache"; mkdir -p "$cache"
+          trivy() {
+            docker run --rm -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+              -v /var/run/docker.sock:/var/run/docker.sock -v "$cache:/root/.cache/trivy" \
+              -v "$PWD:/work" -w /work "$TRIVY_IMAGE" "$@"
+          }
+          trivy --version
+          if ! trivy image --download-db-only --no-progress; then
+            echo "::error::Trivy scanner error: vulnerability DB download failed (not a vulnerability finding)"; exit 2
+          fi
+          if ! trivy image --skip-db-update --no-progress --exit-code 0 \
+                 --ignore-unfixed --pkg-types os,library --severity CRITICAL,HIGH \
+                 --format json --output trivy-report.json "$REF"; then
+            echo "::error::Trivy scanner error: scan of $REF did not complete (not a vulnerability finding)"; exit 2
+          fi
+          trivy convert --format table trivy-report.json
+          findings=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-report.json)
+          echo "Fixable CRITICAL/HIGH findings in $REF: $findings"
+          echo "### Trivy 0.70.0: $findings fixable CRITICAL/HIGH in \`$REF\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$findings" -gt 0 ]; then
+            echo "::error::$findings fixable CRITICAL/HIGH vulnerabilities found"; exit 1
+          fi
+
+      - name: Upload Trivy report
+        if: always() && hashFiles('trivy-report.json') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          image-ref: ${{ steps.target.outputs.ref }}
-          format: table
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
+          name: trivy-report
+          path: trivy-report.json
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
